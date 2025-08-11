@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpinBook - Reserva de Estudio</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .calendar-day:not(.disabled):hover {
+            background-color: #FBBF24; /* amber-300 */
+            color: #1f2937; /* gray-800 */
+        }
+        .time-slot:not(.disabled):hover {
+            transform: scale(1.05);
+            background-color: #F59E0B; /* amber-500 */
+        }
+        .time-slot.selected {
+            background-color: #F59E0B; /* amber-500 */
+            color: white;
+            border-color: #FBBF24; /* amber-300 */
+        }
+        .loader {
+            border-top-color: #F59E0B;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-black text-white antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        
+        <!-- Header -->
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-black tracking-tight text-yellow-400">SpinBook</h1>
+            <p class="text-gray-400 mt-2 text-lg">Reserva tu sesión de grabación o producción musical.</p>
+        </header>
+
+        <main class="bg-gray-900/50 backdrop-blur-sm rounded-2xl shadow-2xl shadow-yellow-500/10 p-6 md:p-8">
+            <div id="app-content" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Calendar Section -->
+                <div id="calendar-container">
+                    <h2 class="text-2xl font-bold mb-4 text-yellow-400">1. Elige una fecha</h2>
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <button id="prev-month" class="p-2 rounded-full hover:bg-gray-700 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                            </button>
+                            <h3 id="month-year" class="text-xl font-semibold"></h3>
+                            <button id="next-month" class="p-2 rounded-full hover:bg-gray-700 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                        </div>
+                        <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center">
+                            <!-- Calendar days will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Slots Section -->
+                <div id="slots-container">
+                    <h2 class="text-2xl font-bold mb-4 text-yellow-400">2. Selecciona la hora</h2>
+                    <p id="selected-date-info" class="text-gray-400 mb-4 h-6"></p>
+                    <div id="time-slots" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <!-- Time slots will be injected here -->
+                    </div>
+                     <div id="slots-loader" class="hidden items-center justify-center h-32">
+                        <div class="loader h-8 w-8 rounded-full border-4 border-gray-700"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Booking Form Section -->
+            <div id="booking-form-container" class="hidden mt-8 pt-8 border-t border-gray-700">
+                <h2 class="text-2xl font-bold mb-4 text-yellow-400">3. Completa tus datos</h2>
+                <form id="booking-form">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Nombre</label>
+                            <input type="text" id="name" required class="w-full bg-gray-800 border-gray-600 rounded-md p-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                            <input type="email" id="email" required class="w-full bg-gray-800 border-gray-600 rounded-md p-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-300 mb-1">Teléfono</label>
+                            <input type="tel" id="phone" required class="w-full bg-gray-800 border-gray-600 rounded-md p-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+                        </div>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <button type="submit" id="submit-booking" class="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-400 transition-all transform hover:scale-105 w-full md:w-auto">
+                            Confirmar Reserva
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Message/Status Area -->
+            <div id="message-area" class="mt-6 text-center"></div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- STATE MANAGEMENT ---
+            let currentDate = new Date();
+            let selectedDate = null;
+            let selectedSlots = [];
+
+            // --- DOM ELEMENTS ---
+            const monthYearEl = document.getElementById('month-year');
+            const calendarGridEl = document.getElementById('calendar-grid');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+            const slotsContainer = document.getElementById('slots-container');
+            const selectedDateInfoEl = document.getElementById('selected-date-info');
+            const timeSlotsEl = document.getElementById('time-slots');
+            const slotsLoaderEl = document.getElementById('slots-loader');
+            const bookingFormContainer = document.getElementById('booking-form-container');
+            const bookingForm = document.getElementById('booking-form');
+            const messageArea = document.getElementById('message-area');
+            const submitButton = document.getElementById('submit-booking');
+
+            const availableHours = [17, 18, 19, 20, 21];
+
+            // --- CALENDAR LOGIC ---
+            function renderCalendar() {
+                calendarGridEl.innerHTML = '';
+                const month = currentDate.getMonth();
+                const year = currentDate.getFullYear();
+                
+                monthYearEl.textContent = `${currentDate.toLocaleString('es-ES', { month: 'long' })} ${year}`;
+
+                const firstDayOfMonth = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // Add day names
+                ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].forEach(day => {
+                    const dayEl = document.createElement('div');
+                    dayEl.className = 'font-bold text-yellow-500 text-sm';
+                    dayEl.textContent = day;
+                    calendarGridEl.appendChild(dayEl);
+                });
+
+                // Add empty cells for the first day
+                let dayOfWeek = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1; // Adjust so Monday is 0
+                for (let i = 0; i < dayOfWeek; i++) {
+                    calendarGridEl.appendChild(document.createElement('div'));
+                }
+
+                // Add days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayEl = document.createElement('div');
+                    const dayDate = new Date(year, month, day);
+                    const dayOfWeekNumber = dayDate.getDay(); // 0 for Sunday, 6 for Saturday
+
+                    dayEl.textContent = day;
+                    dayEl.className = 'calendar-day p-2 rounded-full cursor-pointer transition-colors';
+                    
+                    const isPast = dayDate < today;
+                    const isWeekend = dayOfWeekNumber === 0 || dayOfWeekNumber === 6;
+
+                    if (isPast || isWeekend) {
+                        dayEl.classList.add('disabled', 'text-gray-600', 'cursor-not-allowed');
+                    } else {
+                        dayEl.addEventListener('click', () => selectDate(dayDate));
+                    }
+
+                    if (selectedDate && dayDate.getTime() === selectedDate.getTime()) {
+                        dayEl.classList.add('bg-yellow-500', 'text-black', 'font-bold');
+                    }
+                    
+                    calendarGridEl.appendChild(dayEl);
+                }
+            }
+
+            // --- DATE & TIME SLOT LOGIC ---
+            async function selectDate(date) {
+                selectedDate = date;
+                selectedSlots = [];
+                renderCalendar();
+                // We keep the old busy slots data until the new one is fetched
+                const currentBusySlots = JSON.parse(timeSlotsEl.dataset.busySlots || '[]');
+                renderTimeSlots(currentBusySlots);
+                bookingFormContainer.classList.add('hidden');
+                
+                selectedDateInfoEl.textContent = `Horarios para el ${date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+                timeSlotsEl.innerHTML = '';
+                slotsLoaderEl.style.display = 'flex';
+
+                try {
+                    const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    // IMPORTANT: This API route needs to be created in your Vercel project
+                    const response = await fetch(`/api/get-events?date=${dateString}`);
+                    
+                    if (!response.ok) {
+                        throw new Error('No se pudieron cargar los horarios.');
+                    }
+                    
+                    const busySlots = await response.json();
+                    timeSlotsEl.dataset.busySlots = JSON.stringify(busySlots); // Store busy slots
+                    renderTimeSlots(busySlots);
+
+                } catch (error) {
+                    console.error('Error fetching slots:', error);
+                    displayMessage('Error al cargar horarios. Inténtalo de nuevo.', 'error');
+                } finally {
+                    slotsLoaderEl.style.display = 'none';
+                }
+            }
+
+            function renderTimeSlots(busySlots = []) {
+                timeSlotsEl.innerHTML = '';
+                if (!selectedDate) {
+                    const placeholder = document.createElement('p');
+                    placeholder.textContent = 'Selecciona una fecha para ver los horarios disponibles.';
+                    placeholder.className = 'text-gray-500 col-span-2 sm:col-span-3';
+                    timeSlotsEl.appendChild(placeholder);
+                    return;
+                }
+
+                availableHours.forEach(hour => {
+                    const slotEl = document.createElement('div');
+                    const isBusy = busySlots.includes(hour);
+                    
+                    slotEl.textContent = `${hour}:00 - ${hour + 1}:00`;
+                    slotEl.className = 'time-slot p-3 rounded-lg text-center font-semibold border-2 border-gray-700 transition-transform';
+
+                    if (isBusy) {
+                        slotEl.classList.add('disabled', 'bg-gray-800', 'text-gray-500', 'cursor-not-allowed', 'line-through');
+                    } else {
+                        slotEl.classList.add('cursor-pointer', 'bg-gray-700');
+                        slotEl.dataset.hour = hour;
+                        slotEl.addEventListener('click', () => toggleSlotSelection(hour));
+                    }
+
+                    if (selectedSlots.includes(hour)) {
+                        slotEl.classList.add('selected');
+                    }
+                    
+                    timeSlotsEl.appendChild(slotEl);
+                });
+            }
+
+            function toggleSlotSelection(hour) {
+                const index = selectedSlots.indexOf(hour);
+                if (index > -1) {
+                    selectedSlots.splice(index, 1);
+                } else {
+                    selectedSlots.push(hour);
+                }
+                selectedSlots.sort((a, b) => a - b);
+                const currentBusySlots = JSON.parse(timeSlotsEl.dataset.busySlots || '[]');
+                renderTimeSlots(currentBusySlots); 
+                
+                if (selectedSlots.length > 0) {
+                    bookingFormContainer.classList.remove('hidden');
+                } else {
+                    bookingFormContainer.classList.add('hidden');
+                }
+            }
+            
+            // --- BOOKING LOGIC ---
+            async function handleBookingSubmit(event) {
+                event.preventDefault();
+                if (selectedSlots.length === 0) {
+                    displayMessage('Por favor, selecciona al menos un horario.', 'error');
+                    return;
+                }
+
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const phone = document.getElementById('phone').value;
+
+                const bookingData = {
+                    date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`,
+                    slots: selectedSlots,
+                    userData: { name, email, phone }
+                };
+                
+                setLoadingState(true);
+
+                try {
+                    // IMPORTANT: This API route needs to be created in your Vercel project
+                    const response = await fetch('/api/create-event', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bookingData),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Ocurrió un error en la reserva.');
+                    }
+                    
+                    const result = await response.json();
+                    displayMessage('¡Reserva confirmada con éxito! Recibirás una invitación en tu correo.', 'success');
+                    bookingForm.reset();
+                    bookingFormContainer.classList.add('hidden');
+                    // Refresh slots for the selected day
+                    selectDate(selectedDate);
+
+                } catch (error) {
+                    console.error('Booking error:', error);
+                    displayMessage(error.message, 'error');
+                } finally {
+                    setLoadingState(false);
+                }
+            }
+
+            // --- UI HELPERS ---
+            function displayMessage(text, type = 'info') {
+                messageArea.innerHTML = '';
+                const p = document.createElement('p');
+                p.textContent = text;
+                p.className = `p-3 rounded-lg font-medium`;
+                if (type === 'success') {
+                    p.className += ' bg-green-900 text-green-300';
+                } else if (type === 'error') {
+                    p.className += ' bg-red-900 text-red-300';
+                } else {
+                    p.className += ' bg-blue-900 text-blue-300';
+                }
+                messageArea.appendChild(p);
+                setTimeout(() => messageArea.innerHTML = '', 5000);
+            }
+
+            function setLoadingState(isLoading) {
+                if (isLoading) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = `<div class="flex items-center justify-center"><div class="loader h-5 w-5 rounded-full border-2 border-black border-t-transparent mr-2"></div>Procesando...</div>`;
+                } else {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Confirmar Reserva';
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+            prevMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+            
+            bookingForm.addEventListener('submit', handleBookingSubmit);
+
+            // --- INITIALIZATION ---
+            renderCalendar();
+            renderTimeSlots();
+        });
+    </script>
+</body>
+</html>

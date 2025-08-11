@@ -1,0 +1,16 @@
+{
+  "name": "spinbook",
+  "version": "1.0.0",
+  "description": "SpinBook: A booking app for a recording studio using Google Calendar API.",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "googleapis": "^108.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^28.0.0"
+  }
+}
