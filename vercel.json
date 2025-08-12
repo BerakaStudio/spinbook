@@ -37,14 +37,6 @@
       "dest": "/$1"
     }
   ],
-  "functions": {
-    "api/create-event.js": {
-      "maxDuration": 30
-    },
-    "api/get-events.js": {
-      "maxDuration": 10
-    }
-  },
   "env": {
     "NODE_ENV": "production"
   }
