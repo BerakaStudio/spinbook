@@ -18,27 +18,71 @@ export default async function handler(request, response) {
     }
 
     try {
+        console.log('Received request body:', JSON.stringify(request.body, null, 2));
+
         const { date, slots, userData } = request.body;
 
-        if (!date || !slots || !Array.isArray(slots) || slots.length === 0 || !userData) {
-            return response.status(400).json({ message: 'Invalid booking data provided.' });
+        // Validación más robusta
+        if (!date || typeof date !== 'string') {
+            console.error('Invalid date:', date);
+            return response.status(400).json({ message: 'Date is required and must be a string.' });
+        }
+
+        if (!slots || !Array.isArray(slots) || slots.length === 0) {
+            console.error('Invalid slots:', slots);
+            return response.status(400).json({ message: 'Slots are required and must be a non-empty array.' });
+        }
+
+        if (!userData || !userData.name || !userData.email || !userData.phone) {
+            console.error('Invalid userData:', userData);
+            return response.status(400).json({ message: 'User data is incomplete.' });
+        }
+
+        // Validar formato de fecha (YYYY-MM-DD)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)) {
+            console.error('Invalid date format:', date);
+            return response.status(400).json({ message: 'Date must be in YYYY-MM-DD format.' });
+        }
+
+        // Validar que las slots sean números válidos
+        const validSlots = slots.filter(slot => 
+            typeof slot === 'number' && 
+            Number.isInteger(slot) && 
+            slot >= 0 && 
+            slot <= 23
+        );
+
+        if (validSlots.length !== slots.length) {
+            console.error('Invalid slots format:', slots);
+            return response.status(400).json({ message: 'All slots must be valid hour numbers (0-23).' });
         }
 
         const calendar = getGoogleCalendar();
         const calendarId = getCalendarId();
         const timeZone = getStudioTimezone();
 
-        slots.sort((a, b) => a - b);
-        const startTime = slots[0];
-        const endTime = slots[slots.length - 1] + 1;
+        console.log('Using timezone:', timeZone);
+        console.log('Using calendar ID:', calendarId);
 
-        // **FIX:** Construct local time strings. Google's API will combine these with the timeZone.
+        // Ordenar slots y calcular horarios
+        const sortedSlots = [...validSlots].sort((a, b) => a - b);
+        const startTime = sortedSlots[0];
+        const endTime = sortedSlots[sortedSlots.length - 1] + 1;
+
+        // **FIX PRINCIPAL:** Formato correcto para Google Calendar API
+        // Google Calendar requiere formato RFC 3339 con timezone explícito
         const startDateTime = `${date}T${String(startTime).padStart(2, '0')}:00:00`;
         const endDateTime = `${date}T${String(endTime).padStart(2, '0')}:00:00`;
 
+        console.log('Computed times:');
+        console.log('Start:', startDateTime);
+        console.log('End:', endDateTime);
+        console.log('TimeZone:', timeZone);
+
         const event = {
             summary: `Reserva SpinBook - ${userData.name}`,
-            description: `<b>Datos de la Reserva:</b>\nNombre: ${userData.name}\nEmail: ${userData.email}\nTeléfono: ${userData.phone}`,
+            description: `Datos de la Reserva:\nNombre: ${userData.name}\nEmail: ${userData.email}\nTeléfono: ${userData.phone}\nHorarios: ${sortedSlots.map(h => `${h}:00-${h+1}:00`).join(', ')}`,
             start: {
                 dateTime: startDateTime,
                 timeZone: timeZone,
@@ -55,8 +99,11 @@ export default async function handler(request, response) {
             },
         };
 
-        // Diagnostic log: This will show the exact object sent to Google in Vercel logs.
-        console.log('Attempting to create event:', JSON.stringify(event, null, 2));
+        // Log detallado del evento que se va a crear
+        console.log('Event object to be created:', JSON.stringify(event, null, 2));
+
+        // Verificar credenciales antes de la llamada
+        console.log('Calendar service initialized');
 
         const createdEvent = await calendar.events.insert({
             calendarId: calendarId,
@@ -64,18 +111,57 @@ export default async function handler(request, response) {
             sendNotifications: true,
         });
 
-        return response.status(201).json({ message: 'Booking successful!', event: createdEvent.data });
+        console.log('Event created successfully:', createdEvent.data.id);
+
+        return response.status(201).json({ 
+            message: 'Booking successful!', 
+            event: {
+                id: createdEvent.data.id,
+                htmlLink: createdEvent.data.htmlLink,
+                summary: createdEvent.data.summary
+            }
+        });
 
     } catch (error) {
-        console.error('Error creating event:', error.message);
-        // Log the full error from Google API if available
-        if (error.response && error.response.data) {
+        console.error('=== DETAILED ERROR LOG ===');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        
+        // Log específico de errores de Google API
+        if (error.response) {
+            console.error('Google API Error Status:', error.response.status);
             console.error('Google API Error Details:', JSON.stringify(error.response.data, null, 2));
         }
-        
-        if (error.code === 409) {
-            return response.status(409).json({ message: 'Uno de los horarios seleccionados ya no está disponible. Por favor, refresca la página.' });
+
+        if (error.code) {
+            console.error('Error code:', error.code);
         }
-        return response.status(500).json({ message: 'Internal Server Error', error: error.message });
+
+        // Manejar tipos específicos de error
+        if (error.message?.includes('credentials') || error.message?.includes('authentication')) {
+            return response.status(500).json({ 
+                message: 'Error de configuración del servidor. Contacta al administrador.',
+                debug: 'Authentication error'
+            });
+        }
+        
+        if (error.code === 409 || error.message?.includes('conflict')) {
+            return response.status(409).json({ 
+                message: 'Uno de los horarios seleccionados ya no está disponible. Por favor, refresca la página.' 
+            });
+        }
+
+        if (error.message?.includes('Calendar not found') || error.message?.includes('calendarId')) {
+            return response.status(500).json({ 
+                message: 'Error de configuración del calendario. Contacta al administrador.',
+                debug: 'Calendar configuration error'
+            });
+        }
+
+        // Error genérico
+        return response.status(500).json({ 
+            message: 'Error interno del servidor. Por favor, inténtalo de nuevo.',
+            debug: error.message
+        });
     }
 }
