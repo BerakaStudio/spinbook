@@ -91,11 +91,10 @@ export default async function handler(request, response) {
                 dateTime: endDateTime,
                 timeZone: timeZone,
             },
-            attendees: [
-                { email: userData.email }
-            ],
+            // NOTE: Removed attendees because service accounts cannot invite attendees
+            // without Domain-Wide Delegation. The user info is included in the description instead.
             reminders: {
-                useDefault: true,
+                useDefault: false, // Changed to false since we can't send to attendees
             },
         };
 
@@ -108,13 +107,13 @@ export default async function handler(request, response) {
         const createdEvent = await calendar.events.insert({
             calendarId: calendarId,
             resource: event,
-            sendNotifications: true,
+            sendNotifications: false, // Changed to false since we have no attendees
         });
 
         console.log('Event created successfully:', createdEvent.data.id);
 
         return response.status(201).json({ 
-            message: 'Booking successful!', 
+            message: 'Reserva confirmada con éxito! Tu reserva ha sido registrada en el calendario.',
             event: {
                 id: createdEvent.data.id,
                 htmlLink: createdEvent.data.htmlLink,
