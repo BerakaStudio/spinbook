@@ -57,37 +57,91 @@ export default async function handler(request, response) {
         console.log('📅 Calendar ID:', calendarId);
         console.log('🕐 Timezone:', timeZone);
 
-        // Calculate date range for the entire day in the studio's timezone
-        const startOfDay = `${date}T00:00:00`;
-        const endOfDay = `${date}T23:59:59`;
+        // Calculate date range with proper timezone handling
+        const startOfDay = new Date(`${date}T00:00:00`);
+        const endOfDay = new Date(`${date}T23:59:59`);
+        
+        // Convert to ISO strings for Google Calendar API
+        const timeMin = startOfDay.toISOString();
+        const timeMax = endOfDay.toISOString();
 
-        console.log('Date range for query:');
-        console.log('⏰ Start:', startOfDay);
-        console.log('⏰ End:', endOfDay);
+        console.log('Date range for query (ISO format):');
+        console.log('⏰ Start:', timeMin);
+        console.log('⏰ End:', timeMax);
 
-        // Prepare Google Calendar API query
+        // Prepare Google Calendar API query with corrected parameters
         const queryParams = {
             calendarId: calendarId,
-            timeMin: startOfDay,
-            timeMax: endOfDay,
+            timeMin: timeMin,
+            timeMax: timeMax,
             timeZone: timeZone,
             singleEvents: true,
             orderBy: 'startTime',
-            maxResults: 100, // Reasonable limit to avoid large responses
+            maxResults: 50, // Reduced from 100 to be more conservative
         };
 
-        console.log('🔍 Making Calendar API request...');
+        console.log('🔍 Making Calendar API request with params:', {
+            calendarId: queryParams.calendarId,
+            timeMin: queryParams.timeMin,
+            timeMax: queryParams.timeMax,
+            timeZone: queryParams.timeZone
+        });
         
-        // Execute the Calendar API call with timeout
-        const calendarResponse = await Promise.race([
-            calendar.events.list(queryParams),
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Calendar API timeout')), 10000)
-            )
-        ]);
+        // Execute the Calendar API call with timeout and better error handling
+        let calendarResponse;
+        
+        try {
+            calendarResponse = await Promise.race([
+                calendar.events.list(queryParams),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Calendar API timeout after 10 seconds')), 10000)
+                )
+            ]);
+            
+            console.log('✅ Calendar API response received');
+            console.log('📊 Response status:', calendarResponse.status);
+            
+        } catch (apiError) {
+            console.error('❌ Calendar API call failed:', apiError.message);
+            
+            // Handle specific Google Calendar API errors
+            if (apiError.response?.status === 404) {
+                console.error('📅 Calendar not found - check Calendar ID');
+                return response.status(500).json({
+                    message: 'Calendario no encontrado. Verifica la configuración del Calendar ID.',
+                    code: 'CALENDAR_NOT_FOUND',
+                    debug: `Calendar ID: ${calendarId}`
+                });
+            }
+            
+            if (apiError.response?.status === 403) {
+                console.error('🚫 Access denied - check permissions');
+                return response.status(500).json({
+                    message: 'Sin permisos para acceder al calendario. Verifica que la cuenta de servicio tenga acceso.',
+                    code: 'PERMISSION_DENIED'
+                });
+            }
+            
+            if (apiError.response?.status === 400) {
+                console.error('📋 Bad Request - invalid parameters');
+                console.error('Request params:', queryParams);
+                console.error('API Error details:', apiError.response?.data);
+                
+                return response.status(500).json({
+                    message: 'Parámetros inválidos en la consulta al calendario.',
+                    code: 'BAD_REQUEST',
+                    debug: {
+                        calendarId: calendarId,
+                        timeMin: timeMin,
+                        timeMax: timeMax,
+                        apiError: apiError.response?.data
+                    }
+                });
+            }
+            
+            throw apiError; // Re-throw if not handled above
+        }
 
-        console.log('✅ Calendar API response received');
-        console.log('📊 Response status:', calendarResponse.status);
         console.log('📝 Number of events found:', calendarResponse.data.items?.length || 0);
 
         const events = calendarResponse.data.items || [];
@@ -112,15 +166,24 @@ export default async function handler(request, response) {
 
             try {
                 if (event.start && event.start.dateTime) {
-                    // Regular timed event
+                    // Regular timed event - convert to local timezone
                     const eventStart = new Date(event.start.dateTime);
                     const eventEnd = new Date(event.end.dateTime);
                     
-                    // Extract all hours that this event covers
-                    const startHour = eventStart.getHours();
-                    const endHour = eventEnd.getHours();
+                    // Get local hours in studio timezone
+                    const startHour = parseInt(eventStart.toLocaleString('en-US', {
+                        timeZone: timeZone,
+                        hour: '2-digit',
+                        hour12: false
+                    }));
                     
-                    console.log(`⏰ Event time range: ${startHour}:00 - ${endHour}:00`);
+                    const endHour = parseInt(eventEnd.toLocaleString('en-US', {
+                        timeZone: timeZone,
+                        hour: '2-digit',
+                        hour12: false
+                    }));
+                    
+                    console.log(`⏰ Event time range (${timeZone}): ${startHour}:00 - ${endHour}:00`);
                     
                     // Mark all hours from start to end as busy
                     for (let hour = startHour; hour < endHour; hour++) {
@@ -130,16 +193,23 @@ export default async function handler(request, response) {
                         }
                     }
                     
-                    // If event spans into the next hour, mark that too
-                    if (eventEnd.getMinutes() > 0 && endHour <= 23) {
+                    // If event spans into the next hour partially, mark that too
+                    const endMinutes = parseInt(eventEnd.toLocaleString('en-US', {
+                        timeZone: timeZone,
+                        minute: '2-digit'
+                    }));
+                    
+                    if (endMinutes > 0 && endHour <= 23) {
                         busySlots.add(endHour);
-                        console.log(`🔒 Hour ${endHour} marked as busy (partial)`);}
+                        console.log(`🔒 Hour ${endHour} marked as busy (partial)`);
+                    }
                     
                 } else if (event.start && event.start.date) {
-                    // All-day event - mark entire day as busy
-                    console.log('📅 All-day event detected - marking entire day as busy');
-                    for (let hour = 0; hour < 24; hour++) {
+                    // All-day event - mark entire business day as busy (9 AM to 9 PM)
+                    console.log('📅 All-day event detected - marking business hours as busy');
+                    for (let hour = 9; hour < 21; hour++) { // Business hours only
                         busySlots.add(hour);
+                        console.log(`🔒 Hour ${hour} marked as busy (all-day event)`);
                     }
                 }
             } catch (eventError) {
@@ -237,7 +307,8 @@ export default async function handler(request, response) {
             code: errorCode,
             debug: process.env.NODE_ENV === 'development' ? {
                 originalError: error.message,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                calendarId: process.env.GOOGLE_CALENDAR_ID
             } : undefined
         });
     }
