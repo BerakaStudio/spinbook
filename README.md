@@ -43,12 +43,13 @@ SpinBook es una aplicación web moderna y completa para gestionar reservas de un
 │   ├── _utils.js           # Utilidades compartidas para Google API
 │   ├── create-event.js     # Función para crear reservas con validación
 │   └── get-events.js       # Función para obtener horarios ocupados
-├── script-sb.js            # Lógica principal de la aplicación
-├── index.html              # Interfaz de usuario principal
-├── styles.css              # Estilos personalizados (si existe)
+├── public/
+│   ├── index.html          # Interfaz de usuario principal
+│   ├── styles.css          # Estilos personalizados (si existe)
+│   └── script-sb.js        # Lógica principal de la aplicación
 ├── package.json            # Dependencias del proyecto
-├── .gitignore             # Archivos a ignorar en Git
-└── README.md              # Documentación del proyecto
+├── .gitignore              # Archivos a ignorar en Git
+└── README.md               # Documentación del proyecto
 ```
 
 ## 🚀 Configuración e Instalación
