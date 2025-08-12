@@ -18,7 +18,7 @@ export default async function handler(request, response) {
     }
 
     try {
-        console.log('Get events request received');
+        console.log('=== GET EVENTS START ===');
         console.log('Query parameters:', request.query);
 
         const { date } = request.query;
@@ -36,116 +36,140 @@ export default async function handler(request, response) {
 
         console.log('Processing date:', date);
 
-        const calendar = getGoogleCalendar();
-        const calendarId = getCalendarId();
-        const timeZone = getStudioTimezone();
+        // Inicializar servicios con manejo de errores
+        let calendar, calendarId, timeZone;
+        
+        try {
+            calendar = getGoogleCalendar();
+            calendarId = getCalendarId();
+            timeZone = getStudioTimezone();
+            console.log('Services initialized successfully');
+        } catch (initError) {
+            console.error('Service initialization error:', initError.message);
+            return response.status(500).json({ 
+                message: 'Error de configuración del servidor.',
+                debug: initError.message
+            });
+        }
 
-        console.log('Configuration loaded:');
+        console.log('Configuration:');
         console.log('Calendar ID:', calendarId);
         console.log('Timezone:', timeZone);
 
-        // **FIX:** Construcción más precisa del rango de fechas
-        // Crear el rango para todo el día en la timezone especificada
-        const startOfDay = `${date}T00:00:00`;
-        const endOfDay = `${date}T23:59:59`;
+        // Construir rango de fechas más simple
+        const [year, month, day] = date.split('-');
+        const startDate = new Date(year, month - 1, day, 0, 0, 0);
+        const endDate = new Date(year, month - 1, day, 23, 59, 59);
+
+        const timeMin = startDate.toISOString();
+        const timeMax = endDate.toISOString();
 
         console.log('Date range:');
-        console.log('Start:', startOfDay);
-        console.log('End:', endOfDay);
+        console.log('timeMin:', timeMin);
+        console.log('timeMax:', timeMax);
 
         const queryParams = {
             calendarId: calendarId,
-            timeMin: startOfDay,
-            timeMax: endOfDay,
+            timeMin: timeMin,
+            timeMax: timeMax,
             timeZone: timeZone,
             singleEvents: true,
             orderBy: 'startTime',
-            maxResults: 50, // Límite para evitar problemas
         };
 
-        console.log('Calendar query params:', queryParams);
-
+        console.log('Making Calendar API request...');
+        
         const res = await calendar.events.list(queryParams);
 
         console.log('Calendar API response received');
+        console.log('Raw response status:', res.status);
         console.log('Number of events found:', res.data.items?.length || 0);
 
         const events = res.data.items || [];
-
-        // **FIX:** Procesamiento más robusto de los eventos
         const busySlots = [];
 
-        events.forEach((event, index) => {
-            console.log(`Processing event ${index + 1}:`, {
-                summary: event.summary,
-                start: event.start,
-                end: event.end
+        // Procesar eventos de forma más simple
+        for (let i = 0; i < events.length; i++) {
+            const event = events[i];
+            console.log(`Event ${i + 1}:`, {
+                summary: event.summary || 'No title',
+                start: event.start
             });
 
             try {
-                // Manejar tanto dateTime como date (eventos de día completo)
-                let startTime;
-                if (event.start.dateTime) {
-                    startTime = new Date(event.start.dateTime);
-                } else if (event.start.date) {
-                    // Evento de día completo - marcar todas las horas como ocupadas
-                    for (let hour = 0; hour < 24; hour++) {
+                if (event.start && event.start.dateTime) {
+                    const eventStart = new Date(event.start.dateTime);
+                    const hour = eventStart.getHours();
+                    
+                    console.log(`Event starts at hour: ${hour}`);
+                    
+                    if (hour >= 0 && hour <= 23) {
                         busySlots.push(hour);
                     }
-                    return;
-                } else {
-                    console.warn('Event has no valid start time:', event);
-                    return;
-                }
-
-                const hour = startTime.getHours();
-                console.log(`Event starts at hour: ${hour}`);
-                
-                if (hour >= 0 && hour <= 23) {
-                    busySlots.push(hour);
-                } else {
-                    console.warn('Invalid hour extracted:', hour);
+                } else if (event.start && event.start.date) {
+                    // Evento de día completo
+                    console.log('All-day event detected');
+                    for (let h = 0; h < 24; h++) {
+                        busySlots.push(h);
+                    }
                 }
             } catch (eventError) {
-                console.error('Error processing event:', eventError.message, event);
+                console.error('Error processing individual event:', eventError.message);
+                // Continuar con el siguiente evento
             }
-        });
+        }
 
-        // Remover duplicados y ordenar
+        // Limpiar y ordenar slots
         const uniqueBusySlots = [...new Set(busySlots)].sort((a, b) => a - b);
         
         console.log('Final busy slots:', uniqueBusySlots);
+        console.log('=== GET EVENTS SUCCESS ===');
         
         return response.status(200).json(uniqueBusySlots);
 
     } catch (error) {
         console.error('=== GET EVENTS ERROR ===');
+        console.error('Error type:', error.constructor.name);
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
         
+        // Información detallada de errores de Google API
         if (error.response) {
-            console.error('Google API Error Status:', error.response.status);
-            console.error('Google API Error Details:', JSON.stringify(error.response.data, null, 2));
+            console.error('Google API HTTP Status:', error.response.status);
+            console.error('Google API Status Text:', error.response.statusText);
+            if (error.response.data) {
+                console.error('Google API Error Data:', JSON.stringify(error.response.data, null, 2));
+            }
         }
 
-        // Errores específicos
-        if (error.message?.includes('credentials') || error.message?.includes('authentication')) {
-            return response.status(500).json({ 
-                message: 'Error de configuración del servidor.',
-                debug: 'Authentication error'
-            });
+        if (error.code) {
+            console.error('Error code:', error.code);
         }
 
-        if (error.message?.includes('Calendar not found')) {
-            return response.status(500).json({ 
-                message: 'Error de configuración del calendario.',
-                debug: 'Calendar not found'
-            });
+        // Manejo específico de errores comunes
+        let errorMessage = 'Error interno del servidor.';
+        let statusCode = 500;
+
+        if (error.message?.includes('credentials') || 
+            error.message?.includes('authentication') ||
+            error.message?.includes('unauthorized')) {
+            errorMessage = 'Error de autenticación. Verifica la configuración.';
+            console.error('AUTHENTICATION ERROR DETECTED');
+        } else if (error.message?.includes('Calendar not found') || 
+                   error.message?.includes('calendarId')) {
+            errorMessage = 'Calendar no encontrado. Verifica el ID del calendar.';
+            console.error('CALENDAR NOT FOUND ERROR DETECTED');
+        } else if (error.message?.includes('quota') || 
+                   error.message?.includes('limit')) {
+            errorMessage = 'Límite de API excedido. Inténtalo más tarde.';
+            statusCode = 429;
         }
 
-        return response.status(500).json({ 
-            message: 'Error interno del servidor.',
-            debug: error.message
+        console.error('=== END ERROR LOG ===');
+
+        return response.status(statusCode).json({ 
+            message: errorMessage,
+            debug: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 }

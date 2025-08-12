@@ -9,43 +9,44 @@ import { google } from 'googleapis';
  * @returns {object} An authenticated google.calendar('v3') object.
  */
 export function getGoogleCalendar() {
-    console.log('Initializing Google Calendar client...');
+    console.log('=== INITIALIZING GOOGLE CALENDAR CLIENT ===');
     
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
-    // Validación más detallada de credenciales
+    // Verificar que las variables existan
     if (!clientEmail) {
-        console.error('GOOGLE_CLIENT_EMAIL environment variable is not set');
-        throw new Error("GOOGLE_CLIENT_EMAIL is not set in environment variables.");
+        console.error('MISSING: GOOGLE_CLIENT_EMAIL');
+        throw new Error("GOOGLE_CLIENT_EMAIL is not configured");
     }
 
     if (!privateKey) {
-        console.error('GOOGLE_PRIVATE_KEY environment variable is not set');
-        throw new Error("GOOGLE_PRIVATE_KEY is not set in environment variables.");
+        console.error('MISSING: GOOGLE_PRIVATE_KEY');
+        throw new Error("GOOGLE_PRIVATE_KEY is not configured");
     }
 
-    console.log('Client email found:', clientEmail);
-    console.log('Private key found:', privateKey ? 'Yes (length: ' + privateKey.length + ')' : 'No');
+    console.log('✓ Client email:', clientEmail);
+    console.log('✓ Private key length:', privateKey.length);
 
-    // **FIX:** Manejo más robusto de la clave privada
-    let processedPrivateKey;
-    try {
-        // La clave puede venir con \n escapados o sin procesar
+    // Procesar la clave privada de forma más simple
+    let processedPrivateKey = privateKey;
+    
+    // Solo reemplazar \\n si realmente están presentes
+    if (privateKey.includes('\\n')) {
         processedPrivateKey = privateKey.replace(/\\n/g, '\n');
-        
-        // Verificar que la clave tenga el formato correcto
-        if (!processedPrivateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-            throw new Error('Private key does not have the correct format');
-        }
-        
-        console.log('Private key processed successfully');
-    } catch (keyError) {
-        console.error('Error processing private key:', keyError.message);
-        throw new Error("Invalid private key format. Please check GOOGLE_PRIVATE_KEY environment variable.");
+        console.log('✓ Private key newlines processed');
+    }
+
+    // Verificación básica del formato
+    if (!processedPrivateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        console.error('INVALID: Private key format is incorrect');
+        console.error('Key preview:', processedPrivateKey.substring(0, 50) + '...');
+        throw new Error("Private key format is invalid");
     }
 
     try {
+        console.log('Creating Google Auth...');
+        
         const auth = new google.auth.GoogleAuth({
             credentials: {
                 client_email: clientEmail,
@@ -54,13 +55,16 @@ export function getGoogleCalendar() {
             scopes: ['https://www.googleapis.com/auth/calendar'],
         });
 
+        console.log('Creating Calendar client...');
         const calendar = google.calendar({ version: 'v3', auth });
-        console.log('Google Calendar client initialized successfully');
+        
+        console.log('✅ Google Calendar client created successfully');
         return calendar;
         
     } catch (authError) {
-        console.error('Error creating Google Auth:', authError.message);
-        throw new Error("Failed to initialize Google Calendar client: " + authError.message);
+        console.error('❌ Auth creation failed:', authError.message);
+        console.error('Auth error details:', authError);
+        throw new Error("Google Calendar authentication failed: " + authError.message);
     }
 }
 
