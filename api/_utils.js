@@ -91,9 +91,6 @@ export function getGoogleCalendar() {
         
         console.log('✅ Google Calendar client created successfully');
         
-        // Test the authentication by making a simple API call
-        console.log('🧪 Testing authentication with a simple API call...');
-        
         return calendar;
         
     } catch (authError) {
@@ -193,10 +190,10 @@ export function getStudioTimezone() {
 
 /**
  * Validates all environment variables are properly configured.
- * @returns {object} Configuration object with all validated values.
+ * @returns {Promise<object>} Configuration object with all validated values.
  * @throws {Error} If any configuration is invalid.
  */
-export function validateConfiguration() {
+export async function validateConfiguration() {
     console.log('=== VALIDATING COMPLETE CONFIGURATION ===');
     
     try {
