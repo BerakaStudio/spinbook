@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="icon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -19,14 +20,32 @@
             background-color: #FBBF24; /* amber-300 */
             color: #1f2937; /* gray-800 */
         }
+        .calendar-day.fully-booked {
+            background-color: #374151; /* gray-700 */
+            color: #6B7280; /* gray-500 */
+            cursor: not-allowed;
+        }
         .time-slot:not(.disabled):hover {
             transform: scale(1.05);
-            background-color: #F59E0B; /* amber-500 */
+        }
+        .time-slot.available {
+            background-color: #10B981; /* green-500 */
+            color: white;
+            border-color: #059669; /* green-600 */
+        }
+        .time-slot.available:hover {
+            background-color: #059669; /* green-600 */
         }
         .time-slot.selected {
             background-color: #F59E0B; /* amber-500 */
             color: white;
             border-color: #FBBF24; /* amber-300 */
+        }
+        .time-slot.disabled {
+            background-color: #4B5563; /* gray-600 */
+            color: #9CA3AF; /* gray-400 */
+            cursor: not-allowed;
+            opacity: 0.6;
         }
         .loader {
             border-top-color: #F59E0B;
@@ -34,6 +53,23 @@
         }
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
     </style>
 </head>
@@ -115,12 +151,52 @@
         </main>
     </div>
 
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+        <div class="modal-content bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-yellow-500/20">
+            <div class="bg-yellow-500 text-black p-6 rounded-t-2xl text-center">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold">¡Reserva Confirmada!</h3>
+            </div>
+            
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <h4 class="text-yellow-400 font-bold mb-3">Detalles de tu reserva:</h4>
+                        <div class="space-y-2 text-sm">
+                            <div><span class="text-gray-400">Cliente:</span> <span id="modal-name" class="text-white font-medium"></span></div>
+                            <div><span class="text-gray-400">Email:</span> <span id="modal-email" class="text-white"></span></div>
+                            <div><span class="text-gray-400">Teléfono:</span> <span id="modal-phone" class="text-white"></span></div>
+                            <div><span class="text-gray-400">Fecha:</span> <span id="modal-date" class="text-white font-medium"></span></div>
+                            <div><span class="text-gray-400">Horario:</span> <span id="modal-time" class="text-white font-medium"></span></div>
+                            <div><span class="text-gray-400">ID:</span> <span id="modal-id" class="text-white font-mono text-xs"></span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button id="modal-close" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition-colors">
+                        Aceptar
+                    </button>
+                    <button id="download-pdf" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
+                        📥 Descargar Reserva
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // --- STATE MANAGEMENT ---
             let currentDate = new Date();
             let selectedDate = null;
             let selectedSlots = [];
+            let lastBookingData = null; // Para el PDF
 
             // --- DOM ELEMENTS ---
             const monthYearEl = document.getElementById('month-year');
@@ -135,6 +211,11 @@
             const bookingForm = document.getElementById('booking-form');
             const messageArea = document.getElementById('message-area');
             const submitButton = document.getElementById('submit-booking');
+
+            // Modal elements
+            const successModal = document.getElementById('success-modal');
+            const modalClose = document.getElementById('modal-close');
+            const downloadPdfBtn = document.getElementById('download-pdf');
 
             const availableHours = [17, 18, 19, 20, 21];
 
@@ -151,7 +232,7 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                // **FIX:** Changed the order of day names to start with Monday.
+                // Day headers
                 ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'].forEach(day => {
                     const dayEl = document.createElement('div');
                     dayEl.className = 'font-bold text-yellow-500 text-sm';
@@ -159,17 +240,17 @@
                     calendarGridEl.appendChild(dayEl);
                 });
 
-                // Add empty cells for the first day. This logic is correct for a Monday-first week.
-                let dayOfWeek = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1; // Adjust so Monday is 0
+                // Empty cells for first day
+                let dayOfWeek = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
                 for (let i = 0; i < dayOfWeek; i++) {
                     calendarGridEl.appendChild(document.createElement('div'));
                 }
 
-                // Add days of the month
+                // Calendar days
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dayEl = document.createElement('div');
                     const dayDate = new Date(year, month, day);
-                    const dayOfWeekNumber = dayDate.getDay(); // 0 for Sunday, 6 for Saturday
+                    const dayOfWeekNumber = dayDate.getDay();
 
                     dayEl.textContent = day;
                     dayEl.className = 'calendar-day p-2 rounded-full cursor-pointer transition-colors';
@@ -180,6 +261,7 @@
                     if (isPast || isWeekend) {
                         dayEl.classList.add('disabled', 'text-gray-600', 'cursor-not-allowed');
                     } else {
+                        // Check if fully booked (will be updated after loading slots)
                         dayEl.addEventListener('click', () => selectDate(dayDate));
                     }
 
@@ -189,6 +271,51 @@
                     
                     calendarGridEl.appendChild(dayEl);
                 }
+
+                // Load busy slots for all available days to show which are fully booked
+                loadBusySlotsForMonth(year, month);
+            }
+
+            // --- LOAD BUSY SLOTS FOR MONTH ---
+            async function loadBusySlotsForMonth(year, month) {
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayDate = new Date(year, month, day);
+                    const dayOfWeekNumber = dayDate.getDay();
+                    
+                    // Skip past days and weekends
+                    if (dayDate < today || dayOfWeekNumber === 0 || dayOfWeekNumber === 6) {
+                        continue;
+                    }
+
+                    try {
+                        const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const response = await fetch(`/api/get-events?date=${dateString}`);
+                        
+                        if (response.ok) {
+                            const busySlots = await response.json();
+                            
+                            // Check if all available hours are booked
+                            const fullyBooked = availableHours.every(hour => busySlots.includes(hour));
+                            
+                            if (fullyBooked) {
+                                // Find the day element and mark as fully booked
+                                const dayElements = calendarGridEl.querySelectorAll('.calendar-day');
+                                dayElements.forEach(el => {
+                                    if (el.textContent == day && !el.classList.contains('disabled')) {
+                                        el.classList.add('fully-booked');
+                                        el.removeEventListener('click', () => selectDate(dayDate));
+                                    }
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error loading slots for day', day, ':', error);
+                    }
+                }
             }
 
             // --- DATE & TIME SLOT LOGIC ---
@@ -196,8 +323,6 @@
                 selectedDate = date;
                 selectedSlots = [];
                 renderCalendar();
-                const currentBusySlots = JSON.parse(timeSlotsEl.dataset.busySlots || '[]');
-                renderTimeSlots(currentBusySlots);
                 bookingFormContainer.classList.add('hidden');
                 
                 selectedDateInfoEl.textContent = `Horarios para el ${date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
@@ -213,7 +338,6 @@
                     }
                     
                     const busySlots = await response.json();
-                    timeSlotsEl.dataset.busySlots = JSON.stringify(busySlots);
                     renderTimeSlots(busySlots);
 
                 } catch (error) {
@@ -239,18 +363,19 @@
                     const isBusy = busySlots.includes(hour);
                     
                     slotEl.textContent = `${hour}:00 - ${hour + 1}:00`;
-                    slotEl.className = 'time-slot p-3 rounded-lg text-center font-semibold border-2 border-gray-700 transition-transform';
+                    slotEl.className = 'time-slot p-3 rounded-lg text-center font-semibold border-2 transition-transform';
 
                     if (isBusy) {
-                        slotEl.classList.add('disabled', 'bg-gray-800', 'text-gray-500', 'cursor-not-allowed', 'line-through');
+                        slotEl.classList.add('disabled', 'border-gray-600');
                     } else {
-                        slotEl.classList.add('cursor-pointer', 'bg-gray-700');
+                        slotEl.classList.add('available', 'cursor-pointer', 'border-green-600');
                         slotEl.dataset.hour = hour;
                         slotEl.addEventListener('click', () => toggleSlotSelection(hour));
                     }
 
                     if (selectedSlots.includes(hour)) {
-                        slotEl.classList.add('selected');
+                        slotEl.classList.remove('available', 'border-green-600');
+                        slotEl.classList.add('selected', 'border-yellow-300');
                     }
                     
                     timeSlotsEl.appendChild(slotEl);
@@ -265,8 +390,14 @@
                     selectedSlots.push(hour);
                 }
                 selectedSlots.sort((a, b) => a - b);
-                const currentBusySlots = JSON.parse(timeSlotsEl.dataset.busySlots || '[]');
-                renderTimeSlots(currentBusySlots); 
+                
+                // Re-render slots to update colors
+                const busySlots = [];
+                document.querySelectorAll('.time-slot.disabled').forEach(slot => {
+                    const hour = parseInt(slot.textContent.split(':')[0]);
+                    busySlots.push(hour);
+                });
+                renderTimeSlots(busySlots);
                 
                 if (selectedSlots.length > 0) {
                     bookingFormContainer.classList.remove('hidden');
@@ -308,9 +439,25 @@
                     }
                     
                     const result = await response.json();
-                    displayMessage('¡Reserva confirmada! Tu reserva ha sido registrada en el calendario del estudio.', 'success');
+                    
+                    // Store booking data for PDF generation
+                    lastBookingData = {
+                        userData: bookingData.userData,
+                        date: bookingData.date,
+                        slots: selectedSlots,
+                        eventId: result.event.id,
+                        createdAt: new Date()
+                    };
+                    
+                    // Show success modal instead of message
+                    showSuccessModal();
+                    
+                    // Reset form and state
                     bookingForm.reset();
                     bookingFormContainer.classList.add('hidden');
+                    selectedSlots = [];
+                    
+                    // Refresh the selected date to show new busy slots
                     selectDate(selectedDate);
 
                 } catch (error) {
@@ -319,6 +466,145 @@
                 } finally {
                     setLoadingState(false);
                 }
+            }
+
+            // --- MODAL FUNCTIONS ---
+            function showSuccessModal() {
+                if (!lastBookingData) return;
+
+                const { userData, date, slots, eventId } = lastBookingData;
+                
+                // Populate modal data
+                document.getElementById('modal-name').textContent = userData.name;
+                document.getElementById('modal-email').textContent = userData.email;
+                document.getElementById('modal-phone').textContent = userData.phone;
+                document.getElementById('modal-date').textContent = new Date(date).toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                document.getElementById('modal-time').textContent = slots.map(h => `${h}:00-${h+1}:00`).join(', ');
+                document.getElementById('modal-id').textContent = eventId.substring(0, 12).toUpperCase();
+                
+                // Show modal
+                successModal.classList.remove('hidden');
+                successModal.classList.add('flex');
+            }
+
+            function hideSuccessModal() {
+                successModal.classList.add('hidden');
+                successModal.classList.remove('flex');
+            }
+
+            // --- PDF GENERATION ---
+            function generatePDF() {
+                if (!lastBookingData) return;
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                const { userData, date, slots, eventId, createdAt } = lastBookingData;
+
+                // Colors (SpinBook theme)
+                const yellow = [245, 158, 11]; // #F59E0B
+                const black = [0, 0, 0];
+                const gray = [107, 114, 128]; // #6B7280
+                const white = [255, 255, 255];
+
+                // Header background
+                doc.setFillColor(...yellow);
+                doc.rect(0, 0, 210, 45, 'F');
+
+                // Title
+                doc.setTextColor(...black);
+                doc.setFontSize(28);
+                doc.setFont('helvetica', 'bold');
+                doc.text('SpinBook', 105, 25, { align: 'center' });
+                
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Ticket de Reserva', 105, 35, { align: 'center' });
+
+                // Reset text color
+                doc.setTextColor(...black);
+
+                // Confirmation title
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('CONFIRMACIÓN DE RESERVA', 105, 65, { align: 'center' });
+
+                // Booking details box
+                doc.setFillColor(248, 249, 250); // Light gray
+                doc.rect(15, 75, 180, 80, 'F');
+                doc.setDrawColor(...gray);
+                doc.rect(15, 75, 180, 80, 'S');
+
+                // Details
+                const startY = 90;
+                const lineHeight = 12;
+                let currentY = startY;
+
+                const formattedDate = new Date(date).toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
+
+                const details = [
+                    { label: 'Cliente:', value: userData.name },
+                    { label: 'Email:', value: userData.email },
+                    { label: 'Teléfono:', value: userData.phone },
+                    { label: 'Fecha:', value: formattedDate },
+                    { label: 'Horario:', value: timeSlots },
+                    { label: 'ID de Reserva:', value: eventId.substring(0, 12).toUpperCase() }
+                ];
+
+                doc.setFontSize(11);
+                details.forEach(detail => {
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(detail.label, 20, currentY);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(detail.value, 60, currentY);
+                    currentY += lineHeight;
+                });
+
+                // Instructions
+                currentY += 20;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.text('INSTRUCCIONES IMPORTANTES:', 20, currentY);
+
+                currentY += 15;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+
+                const instructions = [
+                    '• Llega 10 minutos antes de tu sesión',
+                    '• Presenta este ticket al llegar al estudio',
+                    '• Para cancelar, avisa con 24 horas de anticipación',
+                    '• Contacto: info@spinbook.com'
+                ];
+
+                instructions.forEach(instruction => {
+                    doc.text(instruction, 20, currentY);
+                    currentY += 8;
+                });
+
+                // Footer
+                doc.setFillColor(245, 245, 245);
+                doc.rect(0, 260, 210, 37, 'F');
+                doc.setTextColor(...gray);
+                doc.setFontSize(8);
+                doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, 270, { align: 'center' });
+                doc.text('SpinBook © 2025 - Sistema de Reservas Musicales', 105, 280, { align: 'center' });
+
+                // Download PDF
+                const filename = `SpinBook-Reserva-${eventId.substring(0, 8)}.pdf`;
+                doc.save(filename);
             }
 
             // --- UI HELPERS ---
@@ -360,6 +646,27 @@
             });
             
             bookingForm.addEventListener('submit', handleBookingSubmit);
+
+            // Modal event listeners
+            modalClose.addEventListener('click', hideSuccessModal);
+            downloadPdfBtn.addEventListener('click', () => {
+                generatePDF();
+                hideSuccessModal();
+            });
+
+            // Close modal when clicking outside
+            successModal.addEventListener('click', (e) => {
+                if (e.target === successModal) {
+                    hideSuccessModal();
+                }
+            });
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !successModal.classList.contains('hidden')) {
+                    hideSuccessModal();
+                }
+            });
 
             // --- INITIALIZATION ---
             renderCalendar();
