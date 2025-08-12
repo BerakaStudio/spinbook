@@ -151,15 +151,15 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                // Add day names
-                ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].forEach(day => {
+                // **FIX:** Changed the order of day names to start with Monday.
+                ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'].forEach(day => {
                     const dayEl = document.createElement('div');
                     dayEl.className = 'font-bold text-yellow-500 text-sm';
                     dayEl.textContent = day;
                     calendarGridEl.appendChild(dayEl);
                 });
 
-                // Add empty cells for the first day
+                // Add empty cells for the first day. This logic is correct for a Monday-first week.
                 let dayOfWeek = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1; // Adjust so Monday is 0
                 for (let i = 0; i < dayOfWeek; i++) {
                     calendarGridEl.appendChild(document.createElement('div'));
@@ -196,7 +196,6 @@
                 selectedDate = date;
                 selectedSlots = [];
                 renderCalendar();
-                // We keep the old busy slots data until the new one is fetched
                 const currentBusySlots = JSON.parse(timeSlotsEl.dataset.busySlots || '[]');
                 renderTimeSlots(currentBusySlots);
                 bookingFormContainer.classList.add('hidden');
@@ -207,7 +206,6 @@
 
                 try {
                     const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                    // IMPORTANT: This API route needs to be created in your Vercel project
                     const response = await fetch(`/api/get-events?date=${dateString}`);
                     
                     if (!response.ok) {
@@ -215,7 +213,7 @@
                     }
                     
                     const busySlots = await response.json();
-                    timeSlotsEl.dataset.busySlots = JSON.stringify(busySlots); // Store busy slots
+                    timeSlotsEl.dataset.busySlots = JSON.stringify(busySlots);
                     renderTimeSlots(busySlots);
 
                 } catch (error) {
@@ -298,7 +296,6 @@
                 setLoadingState(true);
 
                 try {
-                    // IMPORTANT: This API route needs to be created in your Vercel project
                     const response = await fetch('/api/create-event', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -314,7 +311,6 @@
                     displayMessage('¡Reserva confirmada con éxito! Recibirás una invitación en tu correo.', 'success');
                     bookingForm.reset();
                     bookingFormContainer.classList.add('hidden');
-                    // Refresh slots for the selected day
                     selectDate(selectedDate);
 
                 } catch (error) {

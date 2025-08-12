@@ -32,15 +32,20 @@ export default async function handler(request, response) {
         const startTime = slots[0];
         const endTime = slots[slots.length - 1] + 1; // End time is exclusive
 
+        // **FIX:** Construct the date string with 'Z' to explicitly specify UTC timezone.
+        // This prevents the server's local timezone from affecting the date.
+        const startDateTime = new Date(`${date}T${String(startTime).padStart(2, '0')}:00:00.000Z`);
+        const endDateTime = new Date(`${date}T${String(endTime).padStart(2, '0')}:00:00.000Z`);
+
         const event = {
-            summary: `Reserva Estudio - ${userData.name}`,
+            summary: `Reserva SpinBook - ${userData.name}`,
             description: `<b>Datos de la Reserva:</b>\nNombre: ${userData.name}\nEmail: ${userData.email}\nTeléfono: ${userData.phone}`,
             start: {
-                dateTime: new Date(`${date}T${String(startTime).padStart(2, '0')}:00:00`).toISOString(),
-                timeZone: 'UTC', // Use UTC to avoid timezone issues
+                dateTime: startDateTime.toISOString(),
+                timeZone: 'UTC',
             },
             end: {
-                dateTime: new Date(`${date}T${String(endTime).padStart(2, '0')}:00:00`).toISOString(),
+                dateTime: endDateTime.toISOString(),
                 timeZone: 'UTC',
             },
             attendees: [
