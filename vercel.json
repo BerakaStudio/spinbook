@@ -3,19 +3,19 @@
   "name": "spinbook",
   "builds": [
     {
-      "src": "index.html",
+      "src": "public/index.html",
       "use": "@vercel/static"
     },
     {
-      "src": "script-sb.js",
+      "src": "public/script-sb.js",
       "use": "@vercel/static"
     },
     {
-      "src": "styles.css",
+      "src": "public/styles.css",
       "use": "@vercel/static"
     },
     {
-      "src": "icon.png",
+      "src": "public/icon.png",
       "use": "@vercel/static"
     },
     {
@@ -26,7 +26,7 @@
   "routes": [
     {
       "src": "/",
-      "dest": "/index.html"
+      "dest": "/public/index.html"
     },
     {
       "src": "/api/(.*)",

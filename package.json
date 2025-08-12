@@ -1,8 +1,8 @@
 {
   "name": "spinbook",
-  "version": "2.0.0",
-  "description": "SpinBook v2.0: Advanced booking system for recording studios with real-time conflict prevention and Google Calendar integration",
-  "main": "index.html",
+  "version": "1.0.0",
+  "description": "SpinBook: Advanced booking system for recording studios with real-time conflict prevention and Google Calendar integration",
+  "main": "public/index.html",
   "type": "module",
   "scripts": {
     "start": "vercel dev",
@@ -26,9 +26,9 @@
     "serverless"
   ],
   "author": {
-    "name": "SpinBook Development Team",
-    "email": "info@spinbook.studio",
-    "url": "https://spinbook.studio"
+    "name": "SpinBook - Beraka Studio",
+    "email": "hola@beraka.cl",
+    "url": "https://beraka.cl"
   },
   "license": "MIT",
   "engines": {
@@ -42,12 +42,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/spinbook.git"
+    "url": "git+https://github.com/berakastudio/spinbook.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/spinbook/issues"
+    "url": "https://github.com/berakastudio/spinbook/issues"
   },
-  "homepage": "https://github.com/your-username/spinbook#readme",
+  "homepage": "https://github.com/berakastudio/spinbook#readme",
   "vercel": {
     "outputDirectory": ".",
     "functions": {
@@ -61,7 +61,7 @@
   },
   "config": {
     "studio": {
-      "name": "SpinBook Studio",
+      "name": "DJ SDC Producciones",
       "businessHours": {
         "start": 9,
         "end": 21
@@ -70,8 +70,7 @@
       "services": [
         "Grabación profesional",
         "Producción musical", 
-        "Mezcla y mastering",
-        "Ingeniería básica incluida"
+        "Mezcla y mastering"
       ]
     },
     "features": {
