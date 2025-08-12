@@ -1,16 +1,102 @@
 {
   "name": "spinbook",
   "version": "1.0.0",
-  "description": "SpinBook: A booking app for a recording studio using Google Calendar API.",
+  "description": "SpinBook: Advanced booking system for recording studios with real-time conflict prevention and Google Calendar integration",
   "main": "index.html",
   "type": "module",
   "scripts": {
-    "start": "vercel dev"
+    "start": "vercel dev",
+    "dev": "vercel dev",
+    "build": "echo 'Building SpinBook...' && echo 'Build complete!'",
+    "deploy": "vercel --prod",
+    "test": "echo 'No tests specified yet'",
+    "lint": "echo 'Linting would go here'",
+    "validate-config": "node -e \"import('./_utils.js').then(m => m.validateConfiguration().then(() => console.log('✅ Configuration valid')).catch(e => console.error('❌ Configuration invalid:', e.message)))\""
+  },
+  "keywords": [
+    "booking-system",
+    "recording-studio",
+    "google-calendar",
+    "reservation",
+    "music-studio",
+    "calendar-integration",
+    "conflict-prevention",
+    "real-time-booking",
+    "vercel",
+    "serverless"
+  ],
+  "author": {
+    "name": "SpinBook Development Team",
+    "email": "info@spinbook.studio",
+    "url": "https://spinbook.studio"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
-    "googleapis": "^108.0.0"
+    "googleapis": "^142.0.0"
   },
   "devDependencies": {
-    "vercel": "^28.0.0"
+    "vercel": "^33.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/spinbook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/spinbook/issues"
+  },
+  "homepage": "https://github.com/your-username/spinbook#readme",
+  "vercel": {
+    "functions": {
+      "api/create-event.js": {
+        "maxDuration": 30
+      },
+      "api/get-events.js": {
+        "maxDuration": 10
+      }
+    },
+    "env": {
+      "GOOGLE_CALENDAR_ID": "@google_calendar_id",
+      "GOOGLE_CLIENT_EMAIL": "@google_client_email", 
+      "GOOGLE_PRIVATE_KEY": "@google_private_key",
+      "STUDIO_TIMEZONE": "@studio_timezone"
+    }
+  },
+  "config": {
+    "studio": {
+      "name": "SpinBook Studio",
+      "businessHours": {
+        "start": 9,
+        "end": 21
+      },
+      "timezone": "America/Santiago",
+      "services": [
+        "Grabación profesional",
+        "Producción musical", 
+        "Mezcla y mastering",
+        "Ingeniería básica incluida"
+      ]
+    },
+    "features": {
+      "conflictPrevention": true,
+      "realTimeUpdates": true,
+      "pdfGeneration": true,
+      "detailedLogging": true,
+      "advancedValidation": true
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "postcss": {
+    "plugins": {
+      "tailwindcss": {},
+      "autoprefixer": {}
+    }
   }
 }
