@@ -1,7 +1,7 @@
 // File: api/create-event.js
-// This serverless function creates a new event in Google Calendar.
+// This serverless function creates a new event in Google Calendar using the correct timezone.
 
-import { getGoogleCalendar, getCalendarId } from './_utils.js';
+import { getGoogleCalendar, getCalendarId, getStudioTimezone } from './_utils.js';
 
 export default async function handler(request, response) {
     // CORS headers
@@ -26,30 +26,29 @@ export default async function handler(request, response) {
 
         const calendar = getGoogleCalendar();
         const calendarId = getCalendarId();
+        const timeZone = getStudioTimezone(); // **FIX: Get the studio's timezone**
 
-        // Create a single event for all contiguous selected slots
         slots.sort((a, b) => a - b);
         const startTime = slots[0];
-        const endTime = slots[slots.length - 1] + 1; // End time is exclusive
+        const endTime = slots[slots.length - 1] + 1;
 
-        // **FIX:** Construct the date string with 'Z' to explicitly specify UTC timezone.
-        // This prevents the server's local timezone from affecting the date.
-        const startDateTime = new Date(`${date}T${String(startTime).padStart(2, '0')}:00:00.000Z`);
-        const endDateTime = new Date(`${date}T${String(endTime).padStart(2, '0')}:00:00.000Z`);
+        // **FIX: Create local time strings (without 'Z')**
+        const startDateTime = `${date}T${String(startTime).padStart(2, '0')}:00:00`;
+        const endDateTime = `${date}T${String(endTime).padStart(2, '0')}:00:00`;
 
         const event = {
             summary: `Reserva SpinBook - ${userData.name}`,
             description: `<b>Datos de la Reserva:</b>\nNombre: ${userData.name}\nEmail: ${userData.email}\nTeléfono: ${userData.phone}`,
             start: {
-                dateTime: startDateTime.toISOString(),
-                timeZone: 'UTC',
+                dateTime: startDateTime,
+                timeZone: timeZone, // **FIX: Tell Google the timezone of the start time**
             },
             end: {
-                dateTime: endDateTime.toISOString(),
-                timeZone: 'UTC',
+                dateTime: endDateTime,
+                timeZone: timeZone, // **FIX: Tell Google the timezone of the end time**
             },
             attendees: [
-                { email: userData.email } // Add user as an attendee to send an invitation
+                { email: userData.email }
             ],
             reminders: {
                 useDefault: true,
@@ -59,14 +58,13 @@ export default async function handler(request, response) {
         const createdEvent = await calendar.events.insert({
             calendarId: calendarId,
             resource: event,
-            sendNotifications: true, // This sends the email invitation
+            sendNotifications: true,
         });
 
         return response.status(201).json({ message: 'Booking successful!', event: createdEvent.data });
 
     } catch (error) {
-        console.error('Error creating event:', error);
-        // Check for specific API errors if needed
+        console.error('Error creating event:', error.message);
         if (error.code === 409) {
             return response.status(409).json({ message: 'Uno de los horarios seleccionados ya no está disponible. Por favor, refresca la página.' });
         }

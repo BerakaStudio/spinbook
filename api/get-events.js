@@ -1,10 +1,10 @@
 // File: api/get-events.js
-// This serverless function fetches existing events for a given date from Google Calendar.
+// This serverless function fetches existing events for a given date using the correct timezone.
 
-import { getGoogleCalendar, getCalendarId } from './_utils.js';
+import { getGoogleCalendar, getCalendarId, getStudioTimezone } from './_utils.js';
 
 export default async function handler(request, response) {
-    // Allow requests from any origin. For production, you might want to restrict this.
+    // CORS headers
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -25,28 +25,40 @@ export default async function handler(request, response) {
 
         const calendar = getGoogleCalendar();
         const calendarId = getCalendarId();
+        const timeZone = getStudioTimezone(); // **FIX: Get the studio's timezone**
 
-        // Set timeMin and timeMax to cover the entire booking window for the given date
-        const timeMin = new Date(`${date}T17:00:00.000Z`);
-        // We set it to 23:00 to catch the 21:00-22:00 slot correctly.
-        const timeMax = new Date(`${date}T23:00:00.000Z`);
+        // **FIX: Use local time strings and specify the timezone in the API call**
+        const timeMin = `${date}T00:00:00`;
+        const timeMax = `${date}T23:59:59`;
 
         const res = await calendar.events.list({
             calendarId: calendarId,
-            timeMin: timeMin.toISOString(),
-            timeMax: timeMax.toISOString(),
+            timeMin: new Date(timeMin).toISOString(),
+            timeMax: new Date(timeMax).toISOString(),
+            timeZone: timeZone, // **FIX: Tell Google which timezone to use for filtering**
             singleEvents: true,
             orderBy: 'startTime',
         });
 
         const events = res.data.items;
-        // Extract the starting hour (in UTC) of each busy slot
-        const busySlots = events.map(event => new Date(event.start.dateTime).getUTCHours());
+
+        // **FIX: Convert event start time to the studio's timezone before extracting the hour**
+        const busySlots = events.map(event => {
+            const localStartTime = new Date(event.start.dateTime);
+            // Format the date to the studio's timezone to get the correct local hour
+            const timeInStudioZone = new Intl.DateTimeFormat('en-GB', {
+                timeZone: timeZone,
+                hour: 'numeric',
+                hour12: false
+            }).format(localStartTime);
+            
+            return parseInt(timeInStudioZone, 10);
+        });
         
         return response.status(200).json(busySlots);
 
     } catch (error) {
-        console.error('Error fetching calendar events:', error);
+        console.error('Error fetching calendar events:', error.message);
         return response.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
 }
