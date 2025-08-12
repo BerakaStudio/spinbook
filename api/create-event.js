@@ -26,13 +26,13 @@ export default async function handler(request, response) {
 
         const calendar = getGoogleCalendar();
         const calendarId = getCalendarId();
-        const timeZone = getStudioTimezone(); // **FIX: Get the studio's timezone**
+        const timeZone = getStudioTimezone();
 
         slots.sort((a, b) => a - b);
         const startTime = slots[0];
         const endTime = slots[slots.length - 1] + 1;
 
-        // **FIX: Create local time strings (without 'Z')**
+        // **FIX:** Construct local time strings. Google's API will combine these with the timeZone.
         const startDateTime = `${date}T${String(startTime).padStart(2, '0')}:00:00`;
         const endDateTime = `${date}T${String(endTime).padStart(2, '0')}:00:00`;
 
@@ -41,11 +41,11 @@ export default async function handler(request, response) {
             description: `<b>Datos de la Reserva:</b>\nNombre: ${userData.name}\nEmail: ${userData.email}\nTeléfono: ${userData.phone}`,
             start: {
                 dateTime: startDateTime,
-                timeZone: timeZone, // **FIX: Tell Google the timezone of the start time**
+                timeZone: timeZone,
             },
             end: {
                 dateTime: endDateTime,
-                timeZone: timeZone, // **FIX: Tell Google the timezone of the end time**
+                timeZone: timeZone,
             },
             attendees: [
                 { email: userData.email }
@@ -54,6 +54,9 @@ export default async function handler(request, response) {
                 useDefault: true,
             },
         };
+
+        // Diagnostic log: This will show the exact object sent to Google in Vercel logs.
+        console.log('Attempting to create event:', JSON.stringify(event, null, 2));
 
         const createdEvent = await calendar.events.insert({
             calendarId: calendarId,
@@ -65,6 +68,11 @@ export default async function handler(request, response) {
 
     } catch (error) {
         console.error('Error creating event:', error.message);
+        // Log the full error from Google API if available
+        if (error.response && error.response.data) {
+            console.error('Google API Error Details:', JSON.stringify(error.response.data, null, 2));
+        }
+        
         if (error.code === 409) {
             return response.status(409).json({ message: 'Uno de los horarios seleccionados ya no está disponible. Por favor, refresca la página.' });
         }

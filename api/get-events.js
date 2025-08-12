@@ -25,34 +25,30 @@ export default async function handler(request, response) {
 
         const calendar = getGoogleCalendar();
         const calendarId = getCalendarId();
-        const timeZone = getStudioTimezone(); // **FIX: Get the studio's timezone**
+        const timeZone = getStudioTimezone();
 
-        // **FIX: Use local time strings and specify the timezone in the API call**
-        const timeMin = `${date}T00:00:00`;
-        const timeMax = `${date}T23:59:59`;
+        // **FIX:** Define the time range for the entire day in the specified timezone.
+        // Google Calendar API handles the conversion correctly when timeZone is provided.
+        const timeMin = new Date(`${date}T00:00:00`).toISOString();
+        const timeMax = new Date(`${date}T23:59:59`).toISOString();
 
         const res = await calendar.events.list({
             calendarId: calendarId,
-            timeMin: new Date(timeMin).toISOString(),
-            timeMax: new Date(timeMax).toISOString(),
-            timeZone: timeZone, // **FIX: Tell Google which timezone to use for filtering**
+            timeMin: timeMin,
+            timeMax: timeMax,
+            timeZone: timeZone, // Tell Google which timezone to use for filtering
             singleEvents: true,
             orderBy: 'startTime',
         });
 
         const events = res.data.items;
 
-        // **FIX: Convert event start time to the studio's timezone before extracting the hour**
+        // **FIX:** The returned dateTime is already in the correct local timezone,
+        // so we can simply extract the hour.
         const busySlots = events.map(event => {
-            const localStartTime = new Date(event.start.dateTime);
-            // Format the date to the studio's timezone to get the correct local hour
-            const timeInStudioZone = new Intl.DateTimeFormat('en-GB', {
-                timeZone: timeZone,
-                hour: 'numeric',
-                hour12: false
-            }).format(localStartTime);
-            
-            return parseInt(timeInStudioZone, 10);
+            // new Date() will parse the ISO string (e.g., '2024-08-12T17:00:00-04:00')
+            // and getHours() will return the correct local hour.
+            return new Date(event.start.dateTime).getHours();
         });
         
         return response.status(200).json(busySlots);
