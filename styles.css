@@ -122,26 +122,6 @@ footer p {
 }
 
 footer a {
-  text-decoration: none;
   transition: all 0.3s ease;
   position: relative;
-}
-
-footer a::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #f59e0b, #fbbf24);
-  transition: width 0.3s ease;
-}
-
-footer a:hover {
-  transform: translateY(-1px);
-}
-
-footer a:hover::after {
-  width: 100%;
 }
