@@ -30,6 +30,7 @@ a {
 }
 .logotitle img.logo {
   max-width: 12%;
+  height: fit-content;
 }
 .logotitle .title {
   display: flex;
