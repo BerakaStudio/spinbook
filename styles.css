@@ -122,6 +122,11 @@ footer p {
 }
 
 footer a {
+  color: #facc15;
+}
+
+footer a:hover {
+  opacity: .6;
+  text-decoration: underline;
   transition: all 0.3s ease;
-  position: relative;
 }
