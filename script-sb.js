@@ -4,10 +4,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- CONFIGURACIÓN DEL ESTUDIO (Variable modificable) ---
     const STUDIO_CONFIG = {
         name: 'SpinBook Studio',
-        address: 'Pasaje Las Hortensias 2703, Portal San Francisco, Temuco',
+        address: 'Pasaje Las Hortensias 2703, Portal San Francisco, Temuco', // AGREGA LA DIRECCIÓN DEL ESTUDIO/PRODUCTOR
         contact: {
-            email: 'info@spinbook.com',
-            phone: '+56 9 1234 5678' // Agregar teléfono de contacto opcional
+            email: 'djsdcblak@gmail.com', // AGREGA EL EMAIL DEL ESTUDIO/PRODUCTOR
+            phone: '+56 9 4271 3685' // AGREGA EL TELÉFONO DEL ESTUDIO/PRODUCTOR
         }
     };
 
