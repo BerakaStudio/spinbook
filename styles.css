@@ -122,7 +122,6 @@ footer p {
 }
 
 footer a {
-  color: #f59e0b !important;
   text-decoration: none;
   transition: all 0.3s ease;
   position: relative;
@@ -140,7 +139,6 @@ footer a::after {
 }
 
 footer a:hover {
-  color: #fbbf24 !important;
   transform: translateY(-1px);
 }
 
