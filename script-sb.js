@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const img = new Image();
             img.onload = function() {
                 // Add the image to PDF once loaded
-                doc.addImage(img, 'PNG', 15, 8, 90, 90); // x, y, width, height
+                doc.addImage(img, 'PNG', 15, 8, 40, 40); // x, y, width, height
                 
                 // Continue with the rest of the PDF generation
                 completePDFGeneration();
