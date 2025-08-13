@@ -349,11 +349,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Title
         doc.setTextColor(...black);
         doc.setFontSize(28);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('helvetica', 'black');
         doc.text('SpinBook', 105, 25, { align: 'center' });
         
         doc.setFontSize(14);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont('helvetica', 'bold');
         doc.text('Ticket de Reserva', 105, 35, { align: 'center' });
 
         // Reset text color
