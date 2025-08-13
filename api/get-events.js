@@ -1,6 +1,6 @@
 // File: api/get-events.js
 // This serverless function fetches existing events for a given date using the correct timezone.
-// Updated with improved error handling and stricter slot checking.
+// FIXED: Proper datetime formatting for Google Calendar API
 
 import { getGoogleCalendar, getCalendarId, getStudioTimezone } from './_utils.js';
 
@@ -57,24 +57,33 @@ export default async function handler(request, response) {
         console.log('Calendar ID:', calendarId);
         console.log('Timezone:', timeZone);
 
-        // MEJORA: Rango de fechas más preciso para evitar conflictos de timezone
+        // CORRECCIÓN: Formato correcto para Google Calendar API con timezone
+        // Usar formato ISO 8601 completo con zona horaria
         const startDateTime = `${date}T00:00:00`;
         const endDateTime = `${date}T23:59:59`;
 
-        console.log('Date range:');
-        console.log('Start DateTime:', startDateTime);
-        console.log('End DateTime:', endDateTime);
+        // NUEVA MEJORA: Crear objetos Date para validar y formatear correctamente
+        const startDate = new Date(`${date}T00:00:00`);
+        const endDate = new Date(`${date}T23:59:59`);
+        
+        // Formatear con zona horaria usando toISOString y ajustando timezone
+        const timeZoneOffset = getTimezoneOffset(timeZone, startDate);
+        const startDateTimeWithTZ = new Date(startDate.getTime() - timeZoneOffset).toISOString();
+        const endDateTimeWithTZ = new Date(endDate.getTime() - timeZoneOffset).toISOString();
+
+        console.log('Date range (corrected):');
+        console.log('Start DateTime:', startDateTimeWithTZ);
+        console.log('End DateTime:', endDateTimeWithTZ);
+        console.log('TimeZone:', timeZone);
 
         const queryParams = {
             calendarId: calendarId,
-            timeMin: startDateTime,
-            timeMax: endDateTime,
+            timeMin: startDateTimeWithTZ,
+            timeMax: endDateTimeWithTZ,
             timeZone: timeZone,
             singleEvents: true,
             orderBy: 'startTime',
-            // MEJORA: Incluir eventos cancelados para evitar conflictos
             showDeleted: false,
-            // Aumentar el límite de eventos por si hay muchas reservas
             maxResults: 250
         };
 
@@ -87,13 +96,12 @@ export default async function handler(request, response) {
         console.log('Number of events found:', res.data.items?.length || 0);
 
         const events = res.data.items || [];
-        const busySlots = new Set(); // Usar Set para evitar duplicados automáticamente
+        const busySlots = new Set();
 
-        // MEJORA: Procesamiento más estricto de eventos
+        // Procesamiento de eventos con mejor manejo de timezone
         for (let i = 0; i < events.length; i++) {
             const event = events[i];
             
-            // Saltar eventos cancelados
             if (event.status === 'cancelled') {
                 console.log(`Skipping cancelled event: ${event.summary || 'No title'}`);
                 continue;
@@ -109,22 +117,22 @@ export default async function handler(request, response) {
 
             try {
                 if (event.start && event.start.dateTime) {
-                    // Evento con hora específica
+                    // MEJORA: Mejor manejo de timezone en eventos
                     const eventStartTime = new Date(event.start.dateTime);
                     const eventEndTime = new Date(event.end.dateTime);
                     
-                    console.log(`Event time range: ${eventStartTime.toLocaleString('es-ES')} - ${eventEndTime.toLocaleString('es-ES')}`);
-
-                    // MEJORA: Marcar todos los slots que ocupa el evento
-                    const startHour = eventStartTime.getHours();
-                    const endHour = eventEndTime.getHours();
+                    // Convertir a la zona horaria del estudio para comparación precisa
+                    const studioStartTime = convertToStudioTime(eventStartTime, timeZone);
+                    const studioEndTime = convertToStudioTime(eventEndTime, timeZone);
                     
-                    // Si el evento termina exactamente en la hora (ej: 18:00), no incluir esa hora
-                    const actualEndHour = eventEndTime.getMinutes() === 0 ? endHour : endHour + 1;
+                    console.log(`Event time range (studio timezone): ${studioStartTime.toLocaleString('es-ES')} - ${studioEndTime.toLocaleString('es-ES')}`);
+
+                    const startHour = studioStartTime.getHours();
+                    const endHour = studioEndTime.getHours();
+                    const actualEndHour = studioEndTime.getMinutes() === 0 ? endHour : endHour + 1;
 
                     console.log(`Event occupies hours from ${startHour} to ${actualEndHour} (exclusive)`);
                     
-                    // Marcar todas las horas que ocupa el evento
                     for (let hour = startHour; hour < actualEndHour; hour++) {
                         if (hour >= 0 && hour <= 23) {
                             busySlots.add(hour);
@@ -133,7 +141,6 @@ export default async function handler(request, response) {
                     }
                     
                 } else if (event.start && event.start.date) {
-                    // Evento de día completo
                     console.log('All-day event detected - marking all hours as busy');
                     for (let h = 0; h < 24; h++) {
                         busySlots.add(h);
@@ -145,11 +152,9 @@ export default async function handler(request, response) {
             } catch (eventError) {
                 console.error('Error processing individual event:', eventError.message);
                 console.error('Event data:', JSON.stringify(event, null, 2));
-                // Continuar con el siguiente evento
             }
         }
 
-        // Convertir Set a Array y ordenar
         const finalBusySlots = Array.from(busySlots).sort((a, b) => a - b);
         
         console.log('Final busy slots:', finalBusySlots);
@@ -164,7 +169,6 @@ export default async function handler(request, response) {
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
         
-        // Información detallada de errores de Google API
         if (error.response) {
             console.error('Google API HTTP Status:', error.response.status);
             console.error('Google API Status Text:', error.response.statusText);
@@ -177,7 +181,6 @@ export default async function handler(request, response) {
             console.error('Error code:', error.code);
         }
 
-        // Manejo específico de errores comunes
         let errorMessage = 'Error interno del servidor.';
         let statusCode = 500;
 
@@ -197,6 +200,9 @@ export default async function handler(request, response) {
         } else if (error.message?.includes('timeout')) {
             errorMessage = 'Tiempo de espera agotado. Inténtalo de nuevo.';
             statusCode = 408;
+        } else if (error.message?.includes('Bad Request') || error.code === 400) {
+            errorMessage = 'Error en el formato de la solicitud. Revisa la configuración de fecha.';
+            console.error('BAD REQUEST ERROR - Possible datetime format issue');
         }
 
         console.error('=== END ERROR LOG ===');
@@ -205,5 +211,52 @@ export default async function handler(request, response) {
             message: errorMessage,
             debug: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
+    }
+}
+
+// NUEVA FUNCIÓN: Obtener offset de timezone
+function getTimezoneOffset(timeZone, date) {
+    try {
+        const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+        const studioDate = new Date(date.toLocaleString('en-US', { timeZone: timeZone }));
+        return studioDate.getTime() - utcDate.getTime();
+    } catch (error) {
+        console.warn('Timezone offset calculation failed, using 0:', error.message);
+        return 0;
+    }
+}
+
+// NUEVA FUNCIÓN: Convertir tiempo a zona horaria del estudio
+function convertToStudioTime(date, timeZone) {
+    try {
+        // Crear formatter para la zona horaria del estudio
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        
+        const parts = formatter.formatToParts(date);
+        const formattedParts = {};
+        parts.forEach(part => {
+            formattedParts[part.type] = part.value;
+        });
+        
+        return new Date(
+            parseInt(formattedParts.year),
+            parseInt(formattedParts.month) - 1,
+            parseInt(formattedParts.day),
+            parseInt(formattedParts.hour),
+            parseInt(formattedParts.minute),
+            parseInt(formattedParts.second)
+        );
+    } catch (error) {
+        console.warn('Studio time conversion failed, using original date:', error.message);
+        return date;
     }
 }

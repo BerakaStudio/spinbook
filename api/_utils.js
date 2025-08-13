@@ -1,6 +1,6 @@
 // File: api/_utils.js
 // This file contains helper functions for Google API authentication and configuration.
-// Updated with improved error handling, validation, and logging for SpinBook v2.0
+// IMPROVED: Better timezone handling and validation for SpinBook v2.1
 
 import { google } from 'googleapis';
 
@@ -10,7 +10,7 @@ import { google } from 'googleapis';
  * @returns {object} An authenticated google.calendar('v3') object.
  */
 export function getGoogleCalendar() {
-    console.log('=== INITIALIZING GOOGLE CALENDAR CLIENT v2.0 ===');
+    console.log('=== INITIALIZING GOOGLE CALENDAR CLIENT v2.1 ===');
     
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -85,7 +85,7 @@ export function getGoogleCalendar() {
         
     } catch (authError) {
         console.error('❌ Authentication failed:', authError.message);
-        console.error('🔍 Error details:', {
+        console.error('🐛 Error details:', {
             name: authError.name,
             message: authError.message,
             stack: authError.stack?.substring(0, 500) + '...'
@@ -171,7 +171,7 @@ export function getStudioTimezone() {
         
     } catch (timezoneError) {
         console.error('❌ Invalid timezone:', timeZone);
-        console.error('🔍 Timezone error:', timezoneError.message);
+        console.error('🐛 Timezone error:', timezoneError.message);
         console.error('💡 Common timezone examples:');
         console.error('  - America/New_York (US Eastern)');
         console.error('  - America/Los_Angeles (US Pacific)');
@@ -185,34 +185,56 @@ export function getStudioTimezone() {
 }
 
 /**
- * NUEVO: Función para validar la configuración completa
+ * MEJORADO: Función para validar la configuración completa con test de calendar
  * Verifica que todas las variables de entorno estén configuradas correctamente.
  * @returns {object} Configuración validada
  */
-export function validateConfiguration() {
-    console.log('🔍 VALIDATING COMPLETE SPINBOOK CONFIGURATION...');
+export async function validateConfiguration() {
+    console.log('🔧 VALIDATING COMPLETE SPINBOOK CONFIGURATION...');
     
     try {
         const calendar = getGoogleCalendar();
         const calendarId = getCalendarId();
         const timeZone = getStudioTimezone();
         
-        const config = {
-            calendar,
-            calendarId,
-            timeZone,
-            isValid: true,
-            timestamp: new Date().toISOString()
-        };
-        
-        console.log('✅ All configuration validated successfully!');
-        console.log('📊 Configuration summary:', {
-            calendarId: config.calendarId,
-            timeZone: config.timeZone,
-            validatedAt: config.timestamp
-        });
-        
-        return config;
+        // NUEVO: Test de acceso real al calendario
+        console.log('🔍 Testing calendar access...');
+        try {
+            const testResponse = await calendar.calendars.get({
+                calendarId: calendarId
+            });
+            
+            const calendarInfo = {
+                summary: testResponse.data.summary,
+                timeZone: testResponse.data.timeZone,
+                accessRole: testResponse.data.accessRole || 'unknown'
+            };
+            
+            console.log('✅ Calendar access test successful:', calendarInfo);
+            
+            const config = {
+                calendar,
+                calendarId,
+                timeZone,
+                calendarAccess: calendarInfo,
+                isValid: true,
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('✅ All configuration validated successfully!');
+            console.log('📊 Configuration summary:', {
+                calendarId: config.calendarId,
+                timeZone: config.timeZone,
+                calendarSummary: config.calendarAccess.summary,
+                validatedAt: config.timestamp
+            });
+            
+            return config;
+            
+        } catch (calendarTestError) {
+            console.error('❌ Calendar access test failed:', calendarTestError.message);
+            throw new Error(`Calendar access test failed: ${calendarTestError.message}. Please verify calendar permissions and ID.`);
+        }
         
     } catch (error) {
         console.error('❌ Configuration validation failed:', error.message);
@@ -221,7 +243,7 @@ export function validateConfiguration() {
 }
 
 /**
- * NUEVO: Función para obtener información del entorno
+ * MEJORADO: Función para obtener información del entorno
  * Útil para debugging y logs del sistema.
  * @returns {object} Información del entorno (sin datos sensibles)
  */
@@ -234,9 +256,82 @@ export function getEnvironmentInfo() {
         hasClientEmail: !!process.env.GOOGLE_CLIENT_EMAIL,
         hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY,
         hasTimezone: !!process.env.STUDIO_TIMEZONE,
+        // NUEVO: Variables adicionales del estudio
+        hasStudioName: !!process.env.STUDIO_NAME,
+        hasStudioAddress: !!process.env.STUDIO_ADDRESS,
+        hasStudioEmail: !!process.env.STUDIO_EMAIL,
+        hasStudioPhone: !!process.env.STUDIO_PHONE,
         timestamp: new Date().toISOString()
     };
     
     console.log('📊 Environment Info:', info);
     return info;
+}
+
+/**
+ * NUEVA: Función helper para formatear fechas para Google Calendar API
+ * Asegura el formato correcto con timezone
+ * @param {string} dateString - Fecha en formato YYYY-MM-DD
+ * @param {number} hour - Hora (0-23)
+ * @param {string} timeZone - IANA timezone
+ * @returns {string} Fecha formateada para Google Calendar API
+ */
+export function formatDateTimeForCalendar(dateString, hour, timeZone) {
+    try {
+        // Crear fecha base
+        const baseDateTime = `${dateString}T${String(hour).padStart(2, '0')}:00:00`;
+        
+        // Crear objeto Date para la zona horaria especificada
+        const date = new Date(baseDateTime);
+        
+        // Verificar si la fecha es válida
+        if (isNaN(date.getTime())) {
+            throw new Error(`Invalid date: ${baseDateTime}`);
+        }
+        
+        return baseDateTime;
+        
+    } catch (error) {
+        console.error('Error formatting date for calendar:', error.message);
+        throw new Error(`Date formatting failed: ${error.message}`);
+    }
+}
+
+/**
+ * NUEVA: Función helper para convertir timestamp a zona horaria del estudio
+ * @param {Date} date - Fecha a convertir
+ * @param {string} timeZone - IANA timezone
+ * @returns {Date} Fecha convertida a la zona horaria del estudio
+ */
+export function convertToStudioTimezone(date, timeZone) {
+    try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        
+        const parts = formatter.formatToParts(date);
+        const formattedParts = {};
+        parts.forEach(part => {
+            formattedParts[part.type] = part.value;
+        });
+        
+        return new Date(
+            parseInt(formattedParts.year),
+            parseInt(formattedParts.month) - 1,
+            parseInt(formattedParts.day),
+            parseInt(formattedParts.hour),
+            parseInt(formattedParts.minute),
+            parseInt(formattedParts.second)
+        );
+    } catch (error) {
+        console.warn('Studio timezone conversion failed, using original date:', error.message);
+        return date;
+    }
 }

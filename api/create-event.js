@@ -1,10 +1,10 @@
 // File: api/create-event.js
 // This serverless function creates a new event in Google Calendar using the correct timezone.
-// Updated to include detailed booking information in the calendar event.
+// FIXED: Improved datetime handling and timezone consistency
 
 import { getGoogleCalendar, getCalendarId, getStudioTimezone } from './_utils.js';
 
-// MEJORA: Configuración del estudio como variable modificable
+// Configuración del estudio como variable modificable
 const STUDIO_CONFIG = {
     name: process.env.STUDIO_NAME || 'SpinBook Studio',
     address: process.env.STUDIO_ADDRESS || 'Pasaje Las Hortensias 2703, Portal San Francisco, Temuco',
@@ -77,13 +77,22 @@ export default async function handler(request, response) {
         console.log('Using calendar ID:', calendarId);
         console.log('Using studio config:', STUDIO_CONFIG);
 
-        // MEJORA: Verificar conflictos antes de crear el evento
+        // CORRECCIÓN: Verificar conflictos con mejor manejo de timezone
         try {
             console.log('Checking for existing bookings...');
+            
+            // MEJORA: Usar el mismo formato de fecha que en get-events.js
+            const startDate = new Date(`${date}T00:00:00`);
+            const endDate = new Date(`${date}T23:59:59`);
+            
+            const timeZoneOffset = getTimezoneOffset(timeZone, startDate);
+            const startDateTimeWithTZ = new Date(startDate.getTime() - timeZoneOffset).toISOString();
+            const endDateTimeWithTZ = new Date(endDate.getTime() - timeZoneOffset).toISOString();
+
             const checkResponse = await calendar.events.list({
                 calendarId: calendarId,
-                timeMin: `${date}T00:00:00`,
-                timeMax: `${date}T23:59:59`,
+                timeMin: startDateTimeWithTZ,
+                timeMax: endDateTimeWithTZ,
                 timeZone: timeZone,
                 singleEvents: true,
                 orderBy: 'startTime',
@@ -93,9 +102,11 @@ export default async function handler(request, response) {
             const existingSlots = [];
 
             existingEvents.forEach(event => {
-                if (event.start && event.start.dateTime) {
-                    const eventStart = new Date(event.start.dateTime);
-                    const hour = eventStart.getHours();
+                if (event.start && event.start.dateTime && event.status !== 'cancelled') {
+                    // Convertir a zona horaria del estudio para comparación precisa
+                    const eventStartTime = new Date(event.start.dateTime);
+                    const studioStartTime = convertToStudioTime(eventStartTime, timeZone);
+                    const hour = studioStartTime.getHours();
                     existingSlots.push(hour);
                 }
             });
@@ -121,7 +132,7 @@ export default async function handler(request, response) {
         const startTime = sortedSlots[0];
         const endTime = sortedSlots[sortedSlots.length - 1] + 1;
 
-        // Formato correcto para Google Calendar API
+        // CORRECCIÓN: Formato correcto para Google Calendar API con timezone
         const startDateTime = `${date}T${String(startTime).padStart(2, '0')}:00:00`;
         const endDateTime = `${date}T${String(endTime).padStart(2, '0')}:00:00`;
 
@@ -133,19 +144,19 @@ export default async function handler(request, response) {
         // Generar ID único para la reserva
         const bookingId = `SB-${Date.now().toString(36).toUpperCase()}`;
         
-        // MEJORA: Descripción más detallada para el calendario con dirección del estudio
+        // Descripción detallada para el calendario con dirección del estudio
         const detailedDescription = `
 🎵 RESERVA SPINBOOK - ESTUDIO DE GRABACIÓN 🎵
 
 📋 DETALLES DE LA RESERVA:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👤 Cliente: ${userData.name}
 📧 Email: ${userData.email}
 📱 Teléfono: ${userData.phone}
 📅 Fecha: ${new Date(date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 ⏰ Horarios: ${sortedSlots.map(h => `${h}:00-${h+1}:00`).join(', ')}
 📍 Ubicación: ${STUDIO_CONFIG.address}
-🆔 ID Reserva: ${bookingId}
+🎯 ID Reserva: ${bookingId}
 
 ⚠️ INSTRUCCIONES IMPORTANTES:
 • Llegar 10 minutos antes del horario reservado
@@ -170,7 +181,6 @@ ${new Date().toLocaleString('es-ES')}
                 dateTime: endDateTime,
                 timeZone: timeZone,
             },
-            // MEJORA: Añadir datos estructurados como propiedades extendidas
             extendedProperties: {
                 private: {
                     spinbook_client_name: userData.name,
@@ -182,7 +192,6 @@ ${new Date().toLocaleString('es-ES')}
                     spinbook_created_at: new Date().toISOString()
                 }
             },
-            // Configuración de colores (opcional)
             colorId: '5', // Color amarillo para destacar las reservas de SpinBook
             reminders: {
                 useDefault: false,
@@ -191,15 +200,11 @@ ${new Date().toLocaleString('es-ES')}
                     { method: 'popup', minutes: 15 }  // Recordatorio 15 minutos antes
                 ]
             },
-            // MEJORA: Añadir ubicación del estudio con dirección completa
             location: `${STUDIO_CONFIG.name} - ${STUDIO_CONFIG.address}`,
-            // Status confirmado
             status: 'confirmed'
         };
 
-        // Log detallado del evento que se va a crear
         console.log('Event object to be created:', JSON.stringify(event, null, 2));
-
         console.log('Creating calendar event...');
 
         const createdEvent = await calendar.events.insert({
@@ -228,7 +233,6 @@ ${new Date().toLocaleString('es-ES')}
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
         
-        // Log específico de errores de Google API
         if (error.response) {
             console.error('Google API Error Status:', error.response.status);
             console.error('Google API Error Details:', JSON.stringify(error.response.data, null, 2));
@@ -259,10 +263,62 @@ ${new Date().toLocaleString('es-ES')}
             });
         }
 
-        // Error genérico
+        if (error.message?.includes('Bad Request') || error.code === 400) {
+            return response.status(500).json({ 
+                message: 'Error en el formato de datos. Por favor, inténtalo de nuevo.',
+                debug: 'Request format error'
+            });
+        }
+
         return response.status(500).json({ 
             message: 'Error interno del servidor. Por favor, inténtalo de nuevo.',
             debug: error.message
         });
+    }
+}
+
+// NUEVA FUNCIÓN: Obtener offset de timezone
+function getTimezoneOffset(timeZone, date) {
+    try {
+        const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+        const studioDate = new Date(date.toLocaleString('en-US', { timeZone: timeZone }));
+        return studioDate.getTime() - utcDate.getTime();
+    } catch (error) {
+        console.warn('Timezone offset calculation failed, using 0:', error.message);
+        return 0;
+    }
+}
+
+// NUEVA FUNCIÓN: Convertir tiempo a zona horaria del estudio
+function convertToStudioTime(date, timeZone) {
+    try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        
+        const parts = formatter.formatToParts(date);
+        const formattedParts = {};
+        parts.forEach(part => {
+            formattedParts[part.type] = part.value;
+        });
+        
+        return new Date(
+            parseInt(formattedParts.year),
+            parseInt(formattedParts.month) - 1,
+            parseInt(formattedParts.day),
+            parseInt(formattedParts.hour),
+            parseInt(formattedParts.minute),
+            parseInt(formattedParts.second)
+        );
+    } catch (error) {
+        console.warn('Studio time conversion failed, using original date:', error.message);
+        return date;
     }
 }
