@@ -346,120 +346,144 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFillColor(...yellow);
         doc.rect(0, 0, 210, 45, 'F');
 
-        // Title
-        doc.setTextColor(...black);
-        doc.setFontSize(28);
-        doc.setFont('helvetica', 'black');
-        doc.text('SpinBook', 105, 25, { align: 'center' });
-        
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Ticket de Reserva', 105, 35, { align: 'center' });
+        // Add logo/icon in top left corner
+        try {
+            // Create an image element to load the icon
+            const img = new Image();
+            img.onload = function() {
+                // Add the image to PDF once loaded
+                doc.addImage(img, 'PNG', 15, 8, 90, 90); // x, y, width, height
+                
+                // Continue with the rest of the PDF generation
+                completePDFGeneration();
+            };
+            img.onerror = function() {
+                // If image fails to load, continue without icon
+                console.warn('Could not load icon.png, continuing without logo');
+                completePDFGeneration();
+            };
+            img.src = 'icon.png';
+        } catch (error) {
+            console.warn('Error loading icon:', error);
+            completePDFGeneration();
+        }
 
-        // Reset text color
-        doc.setTextColor(...black);
-
-        // Confirmation title
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text('CONFIRMACIÓN DE RESERVA', 105, 65, { align: 'center' });
-
-        // Booking details box
-        doc.setFillColor(248, 249, 250); // Light gray
-        doc.rect(15, 75, 180, 90, 'F');
-        doc.setDrawColor(...gray);
-        doc.rect(15, 75, 180, 90, 'S');
-
-        // Details
-        const startY = 90;
-        const lineHeight = 12;
-        let currentY = startY;
-
-        const formattedDate = new Date(date).toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
-
-        const details = [
-            { label: 'Cliente:', value: userData.name },
-            { label: 'Email:', value: userData.email },
-            { label: 'Teléfono:', value: userData.phone },
-            { label: 'Fecha:', value: formattedDate },
-            { label: 'Horario:', value: timeSlots },
-            { label: 'Ubicación:', value: STUDIO_CONFIG.address }, // MEJORA: Dirección agregada
-            { label: 'ID de Reserva:', value: eventId.substring(0, 12).toUpperCase() }
-        ];
-
-        doc.setFontSize(11);
-        details.forEach(detail => {
+        function completePDFGeneration() {
+            // Title (moved slightly to the right to accommodate logo)
+            doc.setTextColor(...black);
+            doc.setFontSize(30);
             doc.setFont('helvetica', 'bold');
-            doc.text(detail.label, 20, currentY);
+            doc.text('SpinBook', 125, 25, { align: 'center' });
+            
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Ticket de Reserva', 125, 35, { align: 'center' });
+
+            // Reset text color
+            doc.setTextColor(...black);
+
+            // Confirmation title
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text('CONFIRMACIÓN DE RESERVA', 105, 65, { align: 'center' });
+
+            // Booking details box
+            doc.setFillColor(248, 249, 250); // Light gray
+            doc.rect(15, 75, 180, 90, 'F');
+            doc.setDrawColor(...gray);
+            doc.rect(15, 75, 180, 90, 'S');
+
+            // Details
+            const startY = 90;
+            const lineHeight = 12;
+            let currentY = startY;
+
+            const formattedDate = new Date(date).toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
+
+            const details = [
+                { label: 'Cliente:', value: userData.name },
+                { label: 'Email:', value: userData.email },
+                { label: 'Teléfono:', value: userData.phone },
+                { label: 'Fecha:', value: formattedDate },
+                { label: 'Horario:', value: timeSlots },
+                { label: 'Ubicación:', value: STUDIO_CONFIG.address }, // MEJORA: Dirección agregada
+                { label: 'ID de Reserva:', value: eventId.substring(0, 12).toUpperCase() }
+            ];
+
+            doc.setFontSize(11);
+            details.forEach(detail => {
+                doc.setFont('helvetica', 'bold');
+                doc.text(detail.label, 20, currentY);
+                doc.setFont('helvetica', 'normal');
+                
+                // MEJORA: Manejo de texto largo para la dirección
+                if (detail.label === 'Ubicación:' && detail.value.length > 40) {
+                    const lines = doc.splitTextToSize(detail.value, 120);
+                    doc.text(lines, 60, currentY);
+                    currentY += (lines.length - 1) * lineHeight; // Ajustar altura para múltiples líneas
+                } else {
+                    doc.text(detail.value, 60, currentY);
+                }
+                
+                currentY += lineHeight;
+            });
+
+            // Instructions
+            currentY += 20;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.text('INSTRUCCIONES IMPORTANTES:', 20, currentY);
+
+            currentY += 15;
             doc.setFont('helvetica', 'normal');
-            
-            // MEJORA: Manejo de texto largo para la dirección
-            if (detail.label === 'Ubicación:' && detail.value.length > 40) {
-                const lines = doc.splitTextToSize(detail.value, 120);
-                doc.text(lines, 60, currentY);
-                currentY += (lines.length - 1) * lineHeight; // Ajustar altura para múltiples líneas
-            } else {
-                doc.text(detail.value, 60, currentY);
-            }
-            
-            currentY += lineHeight;
-        });
+            doc.setFontSize(10);
 
-        // Instructions
-        currentY += 20;
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text('INSTRUCCIONES IMPORTANTES:', 20, currentY);
+            // MEJORA: Instrucciones actualizadas con dirección
+            const instructions = [
+                '• Llega 10 minutos antes de tu sesión',
+                '• Presenta este ticket al llegar al estudio',
+                `• Dirígete a: ${STUDIO_CONFIG.address}`,
+                '• Para cancelar, avisa con 24 horas de anticipación',
+                ...(STUDIO_CONFIG.contact.phone ? [`• Contacto: ${STUDIO_CONFIG.contact.phone}`] : []),
+                `• Email: ${STUDIO_CONFIG.contact.email}`
+            ];
 
-        currentY += 15;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-
-        // MEJORA: Instrucciones actualizadas con dirección
-        const instructions = [
-            '• Llega 10 minutos antes de tu sesión',
-            '• Presenta este ticket al llegar al estudio',
-            `• Dirígete a: ${STUDIO_CONFIG.address}`,
-            '• Para cancelar, avisa con 24 horas de anticipación',
-            ...(STUDIO_CONFIG.contact.phone ? [`• Contacto: ${STUDIO_CONFIG.contact.phone}`] : []),
-            `• Email: ${STUDIO_CONFIG.contact.email}`
-        ];
-
-        instructions.forEach(instruction => {
-            // Manejar líneas largas
-            if (instruction.length > 60) {
-                const lines = doc.splitTextToSize(instruction, 170);
-                lines.forEach(line => {
-                    doc.text(line, 20, currentY);
+            instructions.forEach(instruction => {
+                // Manejar líneas largas
+                if (instruction.length > 60) {
+                    const lines = doc.splitTextToSize(instruction, 170);
+                    lines.forEach(line => {
+                        doc.text(line, 20, currentY);
+                        currentY += 8;
+                    });
+                } else {
+                    doc.text(instruction, 20, currentY);
                     currentY += 8;
-                });
-            } else {
-                doc.text(instruction, 20, currentY);
-                currentY += 8;
-            }
-        });
+                }
+            });
 
-        // Footer
-        doc.setFillColor(245, 245, 245);
-        doc.rect(0, 260, 210, 37, 'F');
-        doc.setTextColor(...gray);
-        doc.setFontSize(8);
-        doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, 270, { align: 'center' });
-        doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 280, { align: 'center' });
+            // Footer
+            doc.setFillColor(245, 245, 245);
+            doc.rect(0, 260, 210, 37, 'F');
+            doc.setTextColor(...gray);
+            doc.setFontSize(8);
+            doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, 270, { align: 'center' });
+            doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 280, { align: 'center' });
 
-        // Download PDF
-        const filename = `SpinBook-Reserva-${eventId.substring(0, 8)}.pdf`;
-        doc.save(filename);
-        
-        // MEJORA: Cerrar modal y refrescar después de descargar
-        hideSuccessModal();
+            // Download PDF
+            const filename = `SpinBook-Reserva-${eventId.substring(0, 8)}.pdf`;
+            doc.save(filename);
+            
+            // MEJORA: Cerrar modal y refrescar después de descargar
+            hideSuccessModal();
+        }
     }
 
     // --- UI HELPERS ---
