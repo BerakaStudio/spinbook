@@ -1,0 +1,70 @@
+{
+  "name": "spinbook",
+  "version": "1.0.0",
+  "description": "SpinBook: Sistema profesional de reservas para estudios de grabación musical con Google Calendar API.",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "start": "vercel dev",
+    "dev": "vercel dev --listen 3000",
+    "build": "echo 'No build step required for static deployment'",
+    "deploy": "vercel --prod",
+    "logs": "vercel logs",
+    "test": "echo 'Tests not configured yet'",
+    "lint": "echo 'Linting not configured yet'"
+  },
+  "keywords": [
+    "booking",
+    "calendar",
+    "studio",
+    "recording",
+    "music",
+    "google-calendar",
+    "vercel",
+    "serverless",
+    "javascript",
+    "pdf-generation"
+  ],
+  "author": {
+    "name": "SpinBook - Beraka Studio",
+    "email": "hola@beraka.cl",
+    "url": "https://github.com/berakastudio/spinbook"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/berakastudio/spinbook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/berakastudio/spinbook/issues"
+  },
+  "homepage": "https://github.com/berakastudio/spinbook#readme",
+  "dependencies": {
+    "googleapis": "^108.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^28.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "vercel": {
+    "functions": {
+      "api/*.js": {
+        "runtime": "nodejs18.x"
+      }
+    }
+  },
+  "browserslist": [
+    "defaults",
+    "not IE 11"
+  ],
+  "files": [
+    "index.html",
+    "script-sb.js",
+    "api/",
+    "README.md",
+    "package.json"
+  ]
+}
