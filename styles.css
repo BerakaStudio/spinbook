@@ -126,7 +126,6 @@ footer a {
 }
 
 footer a:hover {
-  opacity: .6;
+  color: white;
   text-decoration: underline;
-  transition: all 0.3s ease;
 }
