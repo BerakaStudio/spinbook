@@ -1,6 +1,6 @@
 // File: api/_utils.js
 // This file contains helper functions for Google API authentication and configuration.
-// IMPROVED: Better timezone handling and validation for SpinBook v2.1
+// © José Lobos Sanhueza, Beraka Studio, 2025
 
 import { google } from 'googleapis';
 

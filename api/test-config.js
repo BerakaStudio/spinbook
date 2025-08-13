@@ -1,6 +1,7 @@
 // File: api/test-config.js
 // MEJORADO: Endpoint para validar la configuración de SpinBook
 // Incluye test de calendar access y mejor diagnóstico de errores
+// © José Lobos Sanhueza, Beraka Studio, 2025
 
 import { validateConfiguration, getEnvironmentInfo } from './_utils.js';
 

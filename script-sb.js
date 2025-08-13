@@ -1,9 +1,10 @@
 // script-sb.js - SpinBook Main Application Script
+// © José Lobos Sanhueza, Beraka Studio, 2025
 
 document.addEventListener('DOMContentLoaded', function() {
     // --- CONFIGURACIÓN DEL ESTUDIO (Variable modificable) ---
     const STUDIO_CONFIG = {
-        name: 'SpinBook Studio',
+        name: 'DJ SDC Producciones - SpinBook', //AGREGA NOMBRE DEL ESTUDIO/PRODUCTOR ANTES DEL GUION
         address: 'Pasaje Las Hortensias 2703, Portal San Francisco, Temuco', // AGREGA LA DIRECCIÓN DEL ESTUDIO/PRODUCTOR
         contact: {
             email: 'djsdcblak@gmail.com', // AGREGA EL EMAIL DEL ESTUDIO/PRODUCTOR
@@ -337,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const { userData, date, slots, eventId, createdAt } = lastBookingData;
 
         // Colors (SpinBook theme)
-        const yellow = [245, 158, 11]; // #F59E0B
+        const yellow = [245, 158, 11]; // #facc15
         const black = [0, 0, 0];
         const gray = [107, 114, 128]; // #6B7280
 

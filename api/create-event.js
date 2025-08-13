@@ -1,6 +1,6 @@
 // File: api/create-event.js
 // This serverless function creates a new event in Google Calendar using the correct timezone.
-// FIXED: Improved datetime handling and timezone consistency
+// © José Lobos Sanhueza, Beraka Studio, 2025
 
 import { getGoogleCalendar, getCalendarId, getStudioTimezone } from './_utils.js';
 

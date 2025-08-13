@@ -1,6 +1,6 @@
 // File: api/get-events.js
 // This serverless function fetches existing events for a given date using the correct timezone.
-// FIXED: Proper datetime formatting for Google Calendar API
+// © José Lobos Sanhueza, Beraka Studio, 2025
 
 import { getGoogleCalendar, getCalendarId, getStudioTimezone } from './_utils.js';
 

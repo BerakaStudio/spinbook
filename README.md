@@ -446,4 +446,4 @@ Este proyecto está bajo la Licencia MIT. Puedes usarlo libremente para proyecto
 ---
 
 **SpinBook** - Sistema de Reservas Musical Profesional  
-Desarrollado con ❤️ por Beraka Studio.
+Desarrollado con ❤️ por Beraka Studio © 2025
