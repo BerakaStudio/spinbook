@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const { userData, date, slots, eventId, createdAt } = lastBookingData;
 
         // Colors (SpinBook theme)
-        const yellow = [245, 158, 11]; // #facc15
+        const yellow = [250, 204, 21]; // #facc15
         const black = [0, 0, 0];
         const gray = [107, 114, 128]; // #6B7280
 
