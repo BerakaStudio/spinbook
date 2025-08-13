@@ -1,6 +1,32 @@
 body {
   font-family: "Inter", sans-serif;
 }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a {
+  font-family: "Inter", sans-serif;
+}
+.logotitle {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+.logotitle img.logo {
+  max-width: 12%;
+}
+.logotitle .title {
+  display: flex;
+  flex-flow: column;
+  margin-left: 2rem;
+  text-align: left;
+  justify-content: center;
+}
 .calendar-day:not(.disabled):hover {
   background-color: #fbbf24; /* amber-300 */
   color: #1f2937; /* gray-800 */
