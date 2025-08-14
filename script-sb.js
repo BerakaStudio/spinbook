@@ -40,6 +40,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const availableHours = [17, 18, 19, 20, 21];
 
+    // --- UTILITY FUNCTIONS ---
+    // NUEVA FUNCIÓN: Formatear fecha correctamente evitando problemas de timezone
+    function formatDateCorrectly(dateString) {
+        // Parse manual para evitar problemas de timezone
+        const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
+        const date = new Date(year, month - 1, day); // mes es 0-indexed en JavaScript
+        
+        return date.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    // NUEVA FUNCIÓN: Crear objeto Date correcto desde string YYYY-MM-DD
+    function createDateFromString(dateString) {
+        const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
+        return new Date(year, month - 1, day); // mes es 0-indexed en JavaScript
+    }
+
     // --- CALENDAR LOGIC ---
     function renderCalendar() {
         calendarGridEl.innerHTML = '';
@@ -258,9 +279,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             // Store booking data for PDF generation
+            // CORRECCIÓN: Almacenar la fecha correctamente sin problemas de timezone
             lastBookingData = {
                 userData: bookingData.userData,
-                date: bookingData.date,
+                date: bookingData.date, // Mantenemos el formato YYYY-MM-DD
+                selectedDateObject: selectedDate, // Agregamos el objeto Date original para referencia
                 slots: selectedSlots,
                 eventId: result.event.id,
                 createdAt: new Date()
@@ -292,12 +315,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-name').textContent = userData.name;
         document.getElementById('modal-email').textContent = userData.email;
         document.getElementById('modal-phone').textContent = userData.phone;
-        document.getElementById('modal-date').textContent = new Date(date).toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        
+        // CORRECCIÓN: Usar la función que formatea correctamente la fecha
+        document.getElementById('modal-date').textContent = formatDateCorrectly(date);
+        
         document.getElementById('modal-time').textContent = slots.map(h => `${h}:00-${h+1}:00`).join(', ');
         document.getElementById('modal-id').textContent = eventId.substring(0, 12).toUpperCase();
         
@@ -398,12 +419,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const lineHeight = 12;
             let currentY = startY;
 
-            const formattedDate = new Date(date).toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+            // CORRECCIÓN: Usar la función que formatea correctamente la fecha
+            const formattedDate = formatDateCorrectly(date);
 
             const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
 
