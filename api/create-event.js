@@ -1,5 +1,5 @@
 // File: api/create-event.js
-// This serverless function creates a new event in Google Calendar using the correct timezone.
+// This serverless function creates a new event in Google Calendar and sends Telegram notification.
 // © José Lobos Sanhueza, Beraka Studio, 2025
 
 import { getGoogleCalendar, getCalendarId, getStudioTimezone } from './_utils.js';
@@ -13,6 +13,113 @@ const STUDIO_CONFIG = {
         phone: process.env.STUDIO_PHONE || '+56 9 1234 5678'
     }
 };
+
+// ✅ NUEVA: Configuración de Telegram desde variables de entorno
+const TELEGRAM_CONFIG = {
+    enabled: process.env.TELEGRAM_ENABLED === 'true' || process.env.TELEGRAM_ENABLED === '1',
+    botToken: process.env.TELEGRAM_BOT_TOKEN,
+    chatId: process.env.TELEGRAM_CHAT_ID,
+    silent: process.env.TELEGRAM_SILENT === 'true' || process.env.TELEGRAM_SILENT === '1',
+    parseMode: process.env.TELEGRAM_PARSE_MODE || 'Markdown'
+};
+
+// ✅ NUEVA FUNCIÓN: NOTIFICACIÓN TELEGRAM DESDE BACKEND
+async function sendTelegramNotification(bookingData) {
+    // Verificar si las notificaciones están habilitadas
+    if (!TELEGRAM_CONFIG.enabled || !TELEGRAM_CONFIG.botToken || !TELEGRAM_CONFIG.chatId) {
+        console.log('Telegram notifications disabled or not configured');
+        return { success: false, reason: 'Disabled or not configured' };
+    }
+
+    // Verificar configuración básica
+    if (!TELEGRAM_CONFIG.botToken.includes(':')) {
+        console.warn('Invalid bot token format. Should be: XXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+        return { success: false, reason: 'Invalid bot token format' };
+    }
+
+    try {
+        const { userData, date, slots, eventId } = bookingData;
+        
+        // Formatear fecha correctamente
+        const [year, month, day] = date.split('-').map(num => parseInt(num, 10));
+        const dateObj = new Date(year, month - 1, day);
+        const formattedDate = dateObj.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
+        const currentTime = new Date().toLocaleString('es-ES');
+
+        // Crear mensaje con formato Markdown
+        const message = `🎵 *NUEVA RESERVA SPINBOOK* 🎵
+
+📋 *DETALLES DE LA RESERVA:*
+────────────────────────────────────
+
+👤 *Cliente:* ${userData.name}
+📧 *Email:* ${userData.email}
+📱 *Teléfono:* ${userData.phone}
+
+📅 *Fecha:* ${formattedDate}
+⏰ *Horario:* ${timeSlots}
+
+📍 *Ubicación:* ${STUDIO_CONFIG.address}
+
+🎯 *ID Reserva:* \`${eventId.substring(0, 12).toUpperCase()}\`
+
+────────────────────────────────────
+⏱️ *Reserva generada:* ${currentTime}
+🏢 *Estudio:* ${STUDIO_CONFIG.name}
+
+✅ *La reserva ha sido confirmada en Google Calendar*`;
+
+        const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendMessage`;
+        
+        const payload = {
+            chat_id: TELEGRAM_CONFIG.chatId,
+            text: message,
+            parse_mode: TELEGRAM_CONFIG.parseMode,
+            disable_notification: TELEGRAM_CONFIG.silent
+        };
+
+        console.log('Sending Telegram notification from backend...');
+        
+        const response = await fetch(telegramApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Telegram notification sent successfully:', result.result.message_id);
+            return { success: true, messageId: result.result.message_id };
+        } else {
+            const errorData = await response.json();
+            console.error('❌ Telegram notification failed:', errorData);
+            
+            // Mostrar error específico si es problema de configuración
+            if (errorData.error_code === 400) {
+                console.error('Bad Request - Check your bot token and chat ID');
+            } else if (errorData.error_code === 401) {
+                console.error('Unauthorized - Invalid bot token');
+            } else if (errorData.error_code === 403) {
+                console.error('Forbidden - Bot was blocked by user or chat not found');
+            }
+            
+            return { success: false, error: errorData };
+        }
+
+    } catch (error) {
+        console.error('Error sending Telegram notification:', error);
+        return { success: false, error: error.message };
+    }
+}
 
 export default async function handler(request, response) {
     // CORS headers
@@ -76,6 +183,11 @@ export default async function handler(request, response) {
         console.log('Using timezone:', timeZone);
         console.log('Using calendar ID:', calendarId);
         console.log('Using studio config:', STUDIO_CONFIG);
+        console.log('Telegram config:', {
+            enabled: TELEGRAM_CONFIG.enabled,
+            hasToken: !!TELEGRAM_CONFIG.botToken,
+            hasChatId: !!TELEGRAM_CONFIG.chatId
+        });
 
         // CORRECCIÓN: Verificar conflictos con mejor manejo de timezone
         try {
@@ -149,7 +261,8 @@ export default async function handler(request, response) {
 🎵 RESERVA SPINBOOK - ESTUDIO DE GRABACIÓN 🎵
 
 📋 DETALLES DE LA RESERVA:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+────────────────────────────────────────────────────────────────────
+
 👤 Cliente: ${userData.name}
 📧 Email: ${userData.email}
 📱 Teléfono: ${userData.phone}
@@ -216,6 +329,22 @@ ${new Date().toLocaleString('es-ES')}
         console.log('Event created successfully with ID:', createdEvent.data.id);
         console.log('Event HTML link:', createdEvent.data.htmlLink);
 
+        // ✅ NUEVA FUNCIONALIDAD: Enviar notificación a Telegram desde el backend
+        console.log('Attempting to send Telegram notification...');
+        const telegramResult = await sendTelegramNotification({
+            userData: userData,
+            date: date,
+            slots: sortedSlots,
+            eventId: createdEvent.data.id
+        });
+
+        if (telegramResult.success) {
+            console.log('✅ Telegram notification sent successfully');
+        } else {
+            console.log('⚠️ Telegram notification failed:', telegramResult.reason || telegramResult.error);
+            // No fallar la reserva si Telegram falla - es solo una notificación
+        }
+
         return response.status(201).json({ 
             message: 'Reserva confirmada con éxito! Tu reserva ha sido registrada en el calendario.',
             event: {
@@ -224,7 +353,8 @@ ${new Date().toLocaleString('es-ES')}
                 summary: createdEvent.data.summary,
                 bookingId: bookingId,
                 studioAddress: STUDIO_CONFIG.address,
-                description: 'Reserva confirmada en Google Calendar con todos los detalles.'
+                description: 'Reserva confirmada en Google Calendar con todos los detalles.',
+                telegramNotification: telegramResult.success ? 'Enviada' : 'Falló (reserva confirmada igualmente)'
             }
         });
 
