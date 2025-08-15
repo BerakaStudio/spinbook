@@ -23,6 +23,16 @@ const TELEGRAM_CONFIG = {
     parseMode: process.env.TELEGRAM_PARSE_MODE || 'Markdown'
 };
 
+// 🔧 CORRECCIÓN: Función para generar ID consistente de 8 caracteres alfanuméricos
+function generateBookingId() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `SB-${result}`;
+}
+
 // ✅ NUEVA FUNCIÓN: NOTIFICACIÓN TELEGRAM DESDE BACKEND
 async function sendTelegramNotification(bookingData) {
     // Verificar si las notificaciones están habilitadas
@@ -57,7 +67,7 @@ async function sendTelegramNotification(bookingData) {
         const message = `🎵 *NUEVA RESERVA SPINBOOK* 🎵
 
 📋 *DETALLES DE LA RESERVA:*
-────────────────────────────────────
+────────────────────────────────────────
 
 👤 *Cliente:* ${userData.name}
 📧 *Email:* ${userData.email}
@@ -68,9 +78,9 @@ async function sendTelegramNotification(bookingData) {
 
 📍 *Ubicación:* ${STUDIO_CONFIG.address}
 
-🎯 *ID Reserva:* \`${eventId.substring(0, 12).toUpperCase()}\`
+🎯 *ID Reserva:* \`${eventId}\`
 
-────────────────────────────────────
+────────────────────────────────────────
 ⏱️ *Reserva generada:* ${currentTime}
 🏢 *Estudio:* ${STUDIO_CONFIG.name}
 
@@ -253,15 +263,15 @@ export default async function handler(request, response) {
         console.log('End:', endDateTime);
         console.log('TimeZone:', timeZone);
 
-        // Generar ID único para la reserva
-        const bookingId = `SB-${Date.now().toString(36).toUpperCase()}`;
+        // 🔧 CORRECCIÓN: Generar ID único consistente para la reserva
+        const bookingId = generateBookingId();
         
         // Descripción detallada para el calendario con dirección del estudio
         const detailedDescription = `
 🎵 RESERVA SPINBOOK - ESTUDIO DE GRABACIÓN 🎵
 
 📋 DETALLES DE LA RESERVA:
-────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────
 
 👤 Cliente: ${userData.name}
 📧 Email: ${userData.email}
@@ -335,7 +345,7 @@ ${new Date().toLocaleString('es-ES')}
             userData: userData,
             date: date,
             slots: sortedSlots,
-            eventId: createdEvent.data.id
+            eventId: bookingId // 🔧 CORRECCIÓN: Usar el ID consistente
         });
 
         if (telegramResult.success) {
@@ -348,7 +358,7 @@ ${new Date().toLocaleString('es-ES')}
         return response.status(201).json({ 
             message: 'Reserva confirmada con éxito! Tu reserva ha sido registrada en el calendario.',
             event: {
-                id: createdEvent.data.id,
+                id: bookingId, // 🔧 CORRECCIÓN: Devolver el ID consistente
                 htmlLink: createdEvent.data.htmlLink,
                 summary: createdEvent.data.summary,
                 bookingId: bookingId,

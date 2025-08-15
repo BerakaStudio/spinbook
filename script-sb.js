@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Modal elements
     const successModal = document.getElementById('success-modal');
-    const modalClose = document.getElementById('modal-close');
+    // 🔧 CORRECCIÓN: Remover referencia al botón "Aceptar" que ya no existe
     const downloadPdfBtn = document.getElementById('download-pdf');
 
     const availableHours = [17, 18, 19, 20, 21];
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 date: bookingData.date, // Mantenemos el formato YYYY-MM-DD
                 selectedDateObject: selectedDate, // Agregamos el objeto Date original para referencia
                 slots: selectedSlots,
-                eventId: result.event.id,
+                eventId: result.event.id, // 🔧 CORRECCIÓN: Usar el ID consistente del backend
                 createdAt: new Date()
             };
             
@@ -333,7 +333,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-date').textContent = formatDateCorrectly(date);
         
         document.getElementById('modal-time').textContent = slots.map(h => `${h}:00-${h+1}:00`).join(', ');
-        document.getElementById('modal-id').textContent = eventId.substring(0, 12).toUpperCase();
+        
+        // 🔧 CORRECCIÓN: Mostrar el ID consistente (sin substring ya que ahora es SB-XXXXXXXX)
+        document.getElementById('modal-id').textContent = eventId;
         
         // MEJORA: Agregar dirección del estudio en el modal
         document.getElementById('modal-address').textContent = STUDIO_CONFIG.address;
@@ -444,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 { label: 'Fecha:', value: formattedDate },
                 { label: 'Horario:', value: timeSlots },
                 { label: 'Ubicación:', value: STUDIO_CONFIG.address }, // MEJORA: Dirección agregada
-                { label: 'ID de Reserva:', value: eventId.substring(0, 12).toUpperCase() }
+                { label: 'ID de Reserva:', value: eventId } // 🔧 CORRECCIÓN: Usar el ID completo consistente
             ];
 
             doc.setFontSize(11);
@@ -508,7 +510,8 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 280, { align: 'center' });
 
             // Download PDF
-            const filename = `SpinBook-Reserva-${eventId.substring(0, 8)}.pdf`;
+            // 🔧 CORRECCIÓN: Usar el ID consistente en el nombre del archivo
+            const filename = `SpinBook-Reserva-${eventId}.pdf`;
             doc.save(filename);
             
             // MEJORA: Cerrar modal y refrescar después de descargar
@@ -557,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
     bookingForm.addEventListener('submit', handleBookingSubmit);
 
     // Modal event listeners
-    modalClose.addEventListener('click', hideSuccessModal);
+    // 🔧 CORRECCIÓN: Solo el botón de descarga PDF queda, que también cierra el modal
     downloadPdfBtn.addEventListener('click', generatePDF);
 
     // Close modal when clicking outside
