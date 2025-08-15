@@ -6,9 +6,10 @@ SpinBook es una aplicación web para gestionar reservas de estudio de grabación
 
 - **📅 Calendario Interactivo**: Visualización clara de días disponibles
 - **⏰ Gestión de Horarios**: Slots horarios configurables (17:00 - 21:00 por defecto)
+- **📑 Selección de Servicios**: Selecciona un servicio específico para reservar
 - **🔒 Prevención de Conflictos**: Verificación en tiempo real de disponibilidad
 - **📋 Información Completa**: Datos del cliente guardados en Google Calendar
-- **📄 Comprobantes PDF**: Generación automática de tickets de reserva
+- **🧾 Comprobantes PDF**: Generación automática de tickets de reserva
 - **🏢 Dirección Integrada**: Información de ubicación en reservas y PDFs
 - **📱 Diseño Responsive**: Funciona perfectamente en móviles y desktop
 - **🤖 Notificaciones Telegram**: Alertas automáticas y seguras de nuevas reservas
@@ -207,6 +208,7 @@ El sistema genera comprobantes PDF con:
 - 🎵 Identificación del estudio
 - 👤 Datos del cliente (nombre, email, teléfono)
 - 📅 Fecha y horario de la reserva
+- 📑 Servicios seleccionados
 - 🏢 Dirección del estudio
 - 🆔 ID único de la reserva
 - ⏰ Timestamp de cuando se realizó la reserva

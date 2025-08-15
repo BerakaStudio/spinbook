@@ -67,11 +67,54 @@
 
             </div>
 
+            <!-- Services Section -->
+            <div id="services-container" class="hidden mt-8 pt-8 border-t border-gray-700">
+                <h2 class="text-2xl font-bold mb-4 text-yellow-400">3. Selecciona los servicios</h2>
+                <p class="text-gray-400 mb-6">Elige uno o más servicios que necesitas para tu sesión</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Servicio 1: Producción Musical -->
+                    <div class="service-card bg-gray-800 p-6 rounded-lg border-2 border-gray-600 hover:border-yellow-400 transition-all cursor-pointer transform hover:scale-105" data-service="produccion">
+                        <div class="flex flex-col items-center text-center space-y-4">
+                            <div class="text-yellow-400 text-4xl">🎼</div>
+                            <h3 class="text-white font-semibold text-lg">Producción Musical</h3>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" class="service-checkbox w-5 h-5 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2" value="produccion">
+                                <span class="text-sm text-gray-400">Seleccionar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Servicio 2: Grabación -->
+                    <div class="service-card bg-gray-800 p-6 rounded-lg border-2 border-gray-600 hover:border-yellow-400 transition-all cursor-pointer transform hover:scale-105" data-service="grabacion">
+                        <div class="flex flex-col items-center text-center space-y-4">
+                            <div class="text-yellow-400 text-4xl">🎤</div>
+                            <h3 class="text-white font-semibold text-lg">Grabación de Voces/Instrumentos</h3>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" class="service-checkbox w-5 h-5 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2" value="grabacion">
+                                <span class="text-sm text-gray-400">Seleccionar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Servicio 3: Mix/Mastering -->
+                    <div class="service-card bg-gray-800 p-6 rounded-lg border-2 border-gray-600 hover:border-yellow-400 transition-all cursor-pointer transform hover:scale-105" data-service="mixmastering">
+                        <div class="flex flex-col items-center text-center space-y-4">
+                            <div class="text-yellow-400 text-4xl">🎚️</div>
+                            <h3 class="text-white font-semibold text-lg">Mix/Mastering</h3>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" class="service-checkbox w-5 h-5 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2" value="mixmastering">
+                                <span class="text-sm text-gray-400">Seleccionar</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Booking Form Section -->
             <div id="booking-form-container" class="hidden mt-8 pt-8 border-t border-gray-700">
-                <h2 class="text-2xl font-bold mb-4 text-yellow-400">3. Completa tus datos</h2>
+                <h2 class="text-2xl font-bold mb-4 text-yellow-400">4. Completa tus datos</h2>
                 <form id="booking-form">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Nombre</label>
                             <input type="text" id="name" required class="w-full bg-gray-800 border-gray-600 rounded-md p-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
@@ -84,7 +127,23 @@
                             <label for="phone" class="block text-sm font-medium text-gray-300 mb-1">Teléfono</label>
                             <input type="tel" id="phone" required class="w-full bg-gray-800 border-gray-600 rounded-md p-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
                         </div>
+                        <div class="flex items-end">
+                            <label class="flex items-center space-x-3 cursor-pointer p-2">
+                                <input type="checkbox" id="toggle-observations" class="sr-only">
+                                <div class="toggle-switch w-12 h-6 bg-gray-600 rounded-full relative transition-colors duration-300">
+                                    <div class="toggle-dot w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300"></div>
+                                </div>
+                                <span class="text-sm text-gray-300 font-medium">Añadir Observación</span>
+                            </label>
+                        </div>
                     </div>
+
+                    <!-- Observations Field -->
+                    <div id="observations-field" class="hidden mt-4 opacity-0 transition-all duration-300">
+                        <label for="observations" class="block text-sm font-medium text-gray-300 mb-1">Observaciones <span class="text-gray-500">(Opcional)</span></label>
+                        <textarea id="observations" rows="3" class="w-full bg-gray-800 border-gray-600 rounded-md p-3 focus:ring-yellow-500 focus:border-yellow-500 transition resize-none" placeholder="Escribe cualquier observación o requerimiento especial para tu sesión..."></textarea>
+                    </div>
+
                     <div class="mt-6 text-center">
                         <button type="submit" id="submit-booking" class="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-400 transition-all transform hover:scale-105 w-full md:w-auto">
                             Confirmar Reserva
@@ -121,7 +180,9 @@
                             <div><span class="text-gray-400">Teléfono:</span> <span id="modal-phone" class="text-white font-medium"></span></div>
                             <div><span class="text-gray-400">Fecha:</span> <span id="modal-date" class="text-white font-medium"></span></div>
                             <div><span class="text-gray-400">Horario:</span> <span id="modal-time" class="text-white font-medium"></span></div>
+                            <div><span class="text-gray-400">Servicios:</span> <span id="modal-services" class="text-white font-medium"></span></div>
                             <div><span class="text-gray-400">Ubicación:</span> <span id="modal-address" class="text-white text-medium"></span></div>
+                            <div id="modal-observations-container" class="hidden"><span class="text-gray-400">Observaciones:</span> <span id="modal-observations" class="text-white text-medium"></span></div>
                             <div><span class="text-gray-400">ID:</span> <span id="modal-id" class="text-white text-medium"></span></div>
                         </div>
                     </div>

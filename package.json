@@ -1,6 +1,6 @@
 {
   "name": "spinbook",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SpinBook: Sistema profesional de reservas para estudios de grabación musical con Google Calendar API y Telegram.",
   "main": "index.html",
   "type": "module",

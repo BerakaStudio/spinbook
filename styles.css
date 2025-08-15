@@ -70,6 +70,90 @@ a {
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+/* === NUEVOS ESTILOS PARA SERVICIOS === */
+.service-card {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(250, 204, 21, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.service-card:hover::before {
+  left: 100%;
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(250, 204, 21, 0.15);
+}
+
+.service-card.border-yellow-400 {
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.3);
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.05) 0%, rgba(250, 204, 21, 0.1) 100%);
+}
+
+.service-card .service-checkbox {
+  transition: all 0.2s ease;
+}
+
+.service-card .service-checkbox:checked {
+  background-color: #facc15;
+  border-color: #facc15;
+}
+
+/* === NUEVOS ESTILOS PARA TOGGLE SWITCH === */
+.toggle-switch {
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-dot {
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.bg-yellow-500 {
+  background-color: #eab308 !important;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.4);
+}
+
+/* Animación suave para el campo de observaciones */
+#observations-field {
+  transition: all 0.3s ease;
+  transform-origin: top;
+}
+
+#observations-field.hidden {
+  max-height: 0;
+  overflow: hidden;
+}
+
+#observations-field:not(.hidden) {
+  max-height: 200px;
+}
+
+/* Mejoras en el textarea de observaciones */
+#observations {
+  transition: all 0.2s ease;
+}
+
+#observations:focus {
+  transform: scale(1.01);
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
+}
+
+/* === ESTILOS EXISTENTES === */
 .loader {
   border-top-color: #f59e0b;
   animation: spin 1s linear infinite;
@@ -95,6 +179,37 @@ a {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* === ANIMACIONES ADICIONALES PARA LAS NUEVAS FUNCIONES === */
+@keyframes serviceCardPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.service-card.border-yellow-400 {
+  animation: serviceCardPulse 2s ease-in-out infinite;
+}
+
+/* Efecto de brillo en los servicios seleccionados */
+@keyframes serviceGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(250, 204, 21, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(250, 204, 21, 0.5); }
+}
+
+.service-card.border-yellow-400:hover {
+  animation: serviceGlow 1.5s ease-in-out infinite;
+}
+
+/* Toggle switch glow effect */
+@keyframes toggleGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(234, 179, 8, 0.4); }
+  50% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.6); }
+}
+
+.toggle-switch.bg-yellow-500:hover {
+  animation: toggleGlow 1s ease-in-out infinite;
 }
 
 /* Footer Styles */
@@ -132,4 +247,80 @@ footer a {
 footer a:hover {
   color: white;
   text-decoration: underline;
+}
+
+/* === RESPONSIVE IMPROVEMENTS === */
+@media (max-width: 768px) {
+  .logotitle img.logo {
+    max-width: 20%;
+  }
+  
+  .service-card {
+    padding: 1rem;
+  }
+  
+  .service-card .text-4xl {
+    font-size: 2.5rem;
+  }
+  
+  .service-card h3 {
+    font-size: 1rem;
+  }
+  
+  .toggle-switch {
+    width: 2.5rem;
+    height: 1.25rem;
+  }
+  
+  .toggle-dot {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+  
+  .toggle-dot.translate-x-6 {
+    transform: translateX(1.25rem);
+  }
+}
+
+/* === ACCESSIBILITY IMPROVEMENTS === */
+.service-card:focus-within {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
+}
+
+.toggle-switch:focus-within {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .service-card.border-yellow-400 {
+    border-width: 3px;
+    background-color: rgba(250, 204, 21, 0.2);
+  }
+  
+  .toggle-switch.bg-yellow-500 {
+    background-color: #facc15 !important;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .service-card,
+  .toggle-switch,
+  .toggle-dot,
+  #observations-field {
+    transition: none;
+  }
+  
+  .service-card::before {
+    display: none;
+  }
+  
+  .service-card.border-yellow-400,
+  .service-card.border-yellow-400:hover,
+  .toggle-switch.bg-yellow-500:hover {
+    animation: none;
+  }
 }

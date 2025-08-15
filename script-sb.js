@@ -19,6 +19,13 @@ document.addEventListener('DOMContentLoaded', function() {
         enabled: true, // Se puede mantener aquí para controlar si mostrar opciones de Telegram en el UI
     };
 
+    // --- SERVICIOS DISPONIBLES ---
+    const AVAILABLE_SERVICES = {
+        'produccion': 'Producción Musical',
+        'grabacion': 'Grabación de Voces/Instrumentos',
+        'mixmastering': 'Mix/Mastering'
+    };
+
     // --- FUNCIÓN PARA OBTENER VERSIÓN DESDE PACKAGE.JSON ---
     async function getAppVersion() {
         try {
@@ -58,6 +65,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentDate = new Date();
     let selectedDate = null;
     let selectedSlots = [];
+    let selectedServices = []; // NUEVO: Array de servicios seleccionados
+    let showObservations = false; // NUEVO: Toggle para observaciones
     let lastBookingData = null; // Para el PDF
     let currentBusySlots = []; // Cache de slots ocupados para la fecha actual
 
@@ -70,14 +79,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedDateInfoEl = document.getElementById('selected-date-info');
     const timeSlotsEl = document.getElementById('time-slots');
     const slotsLoaderEl = document.getElementById('slots-loader');
+    
+    // NUEVO: Elementos de servicios
+    const servicesContainer = document.getElementById('services-container');
+    const serviceCards = document.querySelectorAll('.service-card');
+    const serviceCheckboxes = document.querySelectorAll('.service-checkbox');
+    
     const bookingFormContainer = document.getElementById('booking-form-container');
     const bookingForm = document.getElementById('booking-form');
     const messageArea = document.getElementById('message-area');
     const submitButton = document.getElementById('submit-booking');
 
+    // NUEVO: Elementos de observaciones
+    const toggleObservations = document.getElementById('toggle-observations');
+    const observationsField = document.getElementById('observations-field');
+    const observationsTextarea = document.getElementById('observations');
+
     // Modal elements
     const successModal = document.getElementById('success-modal');
-    // 🔧 CORRECCIÓN: Remover referencia al botón "Aceptar" que ya no existe
     const downloadPdfBtn = document.getElementById('download-pdf');
 
     const availableHours = [17, 18, 19, 20, 21];
@@ -206,7 +225,11 @@ document.addEventListener('DOMContentLoaded', function() {
     async function selectDate(date) {
         selectedDate = date;
         selectedSlots = [];
+        selectedServices = []; // Reset servicios
         renderCalendar();
+        
+        // Ocultar pasos posteriores
+        servicesContainer.classList.add('hidden');
         bookingFormContainer.classList.add('hidden');
         
         selectedDateInfoEl.textContent = `Horarios para el ${date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
@@ -280,28 +303,155 @@ document.addEventListener('DOMContentLoaded', function() {
         renderTimeSlots(currentBusySlots);
         
         if (selectedSlots.length > 0) {
+            servicesContainer.classList.remove('hidden');
+            // Reset servicios al cambiar horarios
+            selectedServices = [];
+            updateServiceSelection();
+            checkFormCompletion();
+        } else {
+            servicesContainer.classList.add('hidden');
+            bookingFormContainer.classList.add('hidden');
+        }
+    }
+
+    // --- NUEVA LÓGICA DE SERVICIOS ---
+    function initializeServiceSelection() {
+        // Agregar event listeners a las tarjetas de servicios
+        serviceCards.forEach(card => {
+            const checkbox = card.querySelector('.service-checkbox');
+            const serviceValue = checkbox.value;
+
+            // Click en la tarjeta o checkbox
+            card.addEventListener('click', (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+                toggleServiceSelection(serviceValue, checkbox.checked);
+            });
+
+            checkbox.addEventListener('change', (e) => {
+                toggleServiceSelection(serviceValue, e.target.checked);
+            });
+        });
+    }
+
+    function toggleServiceSelection(serviceValue, isSelected) {
+        const index = selectedServices.indexOf(serviceValue);
+        
+        if (isSelected && index === -1) {
+            selectedServices.push(serviceValue);
+        } else if (!isSelected && index > -1) {
+            selectedServices.splice(index, 1);
+        }
+
+        updateServiceSelection();
+        checkFormCompletion();
+    }
+
+    function updateServiceSelection() {
+        serviceCards.forEach(card => {
+            const checkbox = card.querySelector('.service-checkbox');
+            const serviceValue = checkbox.value;
+            const isSelected = selectedServices.includes(serviceValue);
+
+            // Actualizar estado visual de la tarjeta
+            if (isSelected) {
+                card.classList.remove('border-gray-600', 'hover:border-yellow-400');
+                card.classList.add('border-yellow-400', 'bg-yellow-400/10');
+                checkbox.checked = true;
+            } else {
+                card.classList.remove('border-yellow-400', 'bg-yellow-400/10');
+                card.classList.add('border-gray-600', 'hover:border-yellow-400');
+                checkbox.checked = false;
+            }
+        });
+    }
+
+    function checkFormCompletion() {
+        if (selectedServices.length > 0) {
             bookingFormContainer.classList.remove('hidden');
         } else {
             bookingFormContainer.classList.add('hidden');
         }
     }
+
+    // --- NUEVA LÓGICA DE OBSERVACIONES ---
+    function initializeObservationsToggle() {
+        const toggleSwitch = toggleObservations.parentElement.querySelector('.toggle-switch');
+        const toggleDot = toggleSwitch.querySelector('.toggle-dot');
+
+        toggleObservations.addEventListener('change', () => {
+            showObservations = toggleObservations.checked;
+            
+            if (showObservations) {
+                // Mostrar campo de observaciones
+                observationsField.classList.remove('hidden');
+                setTimeout(() => {
+                    observationsField.classList.remove('opacity-0');
+                    observationsField.classList.add('opacity-100');
+                }, 10);
+                
+                // Animar toggle switch
+                toggleSwitch.classList.remove('bg-gray-600');
+                toggleSwitch.classList.add('bg-yellow-500');
+                toggleDot.classList.add('translate-x-6');
+                
+                // Focus en textarea
+                setTimeout(() => observationsTextarea.focus(), 300);
+            } else {
+                // Ocultar campo de observaciones
+                observationsField.classList.remove('opacity-100');
+                observationsField.classList.add('opacity-0');
+                setTimeout(() => {
+                    observationsField.classList.add('hidden');
+                }, 300);
+                
+                // Animar toggle switch
+                toggleSwitch.classList.remove('bg-yellow-500');
+                toggleSwitch.classList.add('bg-gray-600');
+                toggleDot.classList.remove('translate-x-6');
+                
+                // Limpiar textarea
+                observationsTextarea.value = '';
+            }
+        });
+
+        // Click en el toggle switch también
+        toggleSwitch.addEventListener('click', () => {
+            toggleObservations.checked = !toggleObservations.checked;
+            toggleObservations.dispatchEvent(new Event('change'));
+        });
+    }
     
     // --- BOOKING LOGIC ---
     async function handleBookingSubmit(event) {
         event.preventDefault();
+        
         if (selectedSlots.length === 0) {
             displayMessage('Por favor, selecciona al menos un horario.', 'error');
+            return;
+        }
+
+        if (selectedServices.length === 0) {
+            displayMessage('Por favor, selecciona al menos un servicio.', 'error');
             return;
         }
 
         const name = document.getElementById('name').value;
         const email = document.getElementById('email').value;
         const phone = document.getElementById('phone').value;
+        const observations = showObservations ? observationsTextarea.value.trim() : '';
 
         const bookingData = {
             date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`,
             slots: selectedSlots,
-            userData: { name, email, phone }
+            services: selectedServices, // NUEVO: Incluir servicios seleccionados
+            userData: { 
+                name, 
+                email, 
+                phone,
+                observations // NUEVO: Incluir observaciones
+            }
         };
         
         setLoadingState(true);
@@ -327,6 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 date: bookingData.date, // Mantenemos el formato YYYY-MM-DD
                 selectedDateObject: selectedDate, // Agregamos el objeto Date original para referencia
                 slots: selectedSlots,
+                services: selectedServices, // NUEVO: Almacenar servicios para PDF
                 eventId: result.event.id, // Usar el ID consistente del backend
                 createdAt: new Date()
             };
@@ -340,7 +491,21 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset form and state
             bookingForm.reset();
             bookingFormContainer.classList.add('hidden');
+            servicesContainer.classList.add('hidden');
             selectedSlots = [];
+            selectedServices = [];
+            showObservations = false;
+            
+            // Reset observaciones toggle
+            toggleObservations.checked = false;
+            observationsField.classList.add('hidden', 'opacity-0');
+            const toggleSwitch = toggleObservations.parentElement.querySelector('.toggle-switch');
+            const toggleDot = toggleSwitch.querySelector('.toggle-dot');
+            toggleSwitch.classList.remove('bg-yellow-500');
+            toggleSwitch.classList.add('bg-gray-600');
+            toggleDot.classList.remove('translate-x-6');
+            
+            updateServiceSelection();
 
         } catch (error) {
             console.error('Booking error:', error);
@@ -354,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showSuccessModal() {
         if (!lastBookingData) return;
 
-        const { userData, date, slots, eventId } = lastBookingData;
+        const { userData, date, slots, services, eventId } = lastBookingData;
         
         // Populate modal data
         document.getElementById('modal-name').textContent = userData.name;
@@ -365,6 +530,20 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-date').textContent = formatDateCorrectly(date);
         
         document.getElementById('modal-time').textContent = slots.map(h => `${h}:00-${h+1}:00`).join(', ');
+        
+        // NUEVO: Mostrar servicios seleccionados
+        const serviceNames = services.map(service => AVAILABLE_SERVICES[service]).join(', ');
+        document.getElementById('modal-services').textContent = serviceNames;
+        
+        // NUEVO: Mostrar observaciones si existen
+        const observationsContainer = document.getElementById('modal-observations-container');
+        const observationsEl = document.getElementById('modal-observations');
+        if (userData.observations && userData.observations.trim()) {
+            observationsEl.textContent = userData.observations;
+            observationsContainer.classList.remove('hidden');
+        } else {
+            observationsContainer.classList.add('hidden');
+        }
         
         // Mostrar el ID consistente (sin substring ya que ahora es SB-XXXXXXXX)
         document.getElementById('modal-id').textContent = eventId;
@@ -400,10 +579,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function generatePDF() {
         if (!lastBookingData) return;
 
-        const { jsPDF } = window.jspdf;
+        const { jsPDF } = window.jsPDF;
         const doc = new jsPDF();
         
-        const { userData, date, slots, eventId, createdAt } = lastBookingData;
+        const { userData, date, slots, services, eventId, createdAt } = lastBookingData;
 
         // Colors (SpinBook theme)
         const yellow = [250, 204, 21]; // #facc15
@@ -457,9 +636,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Booking details box
             doc.setFillColor(248, 249, 250); // Light gray
-            doc.rect(15, 75, 180, 90, 'F');
+            doc.rect(15, 75, 180, 110, 'F'); // Aumentado el alto para incluir servicios
             doc.setDrawColor(...gray);
-            doc.rect(15, 75, 180, 90, 'S');
+            doc.rect(15, 75, 180, 110, 'S');
 
             // Details
             const startY = 90;
@@ -470,6 +649,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const formattedDate = formatDateCorrectly(date);
 
             const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
+            
+            // NUEVO: Formatear servicios para PDF
+            const serviceNames = services.map(service => AVAILABLE_SERVICES[service]).join(', ');
 
             const details = [
                 { label: 'Cliente:', value: userData.name },
@@ -477,9 +659,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 { label: 'Teléfono:', value: userData.phone },
                 { label: 'Fecha:', value: formattedDate },
                 { label: 'Horario:', value: timeSlots },
+                { label: 'Servicios:', value: serviceNames }, // NUEVO: Servicios en PDF
                 { label: 'Ubicación:', value: STUDIO_CONFIG.address }, 
-                { label: 'ID de Reserva:', value: eventId } 
+                { label: 'ID de Reserva:', value: eventId }
             ];
+
+            // NUEVO: Agregar observaciones si existen
+            if (userData.observations && userData.observations.trim()) {
+                details.push({ label: 'Observaciones:', value: userData.observations });
+            }
 
             doc.setFontSize(11);
             details.forEach(detail => {
@@ -487,8 +675,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 doc.text(detail.label, 20, currentY);
                 doc.setFont('helvetica', 'normal');
                 
-                // Manejo de texto largo para la dirección
-                if (detail.label === 'Ubicación:' && detail.value.length > 40) {
+                // Manejo de texto largo para campos que pueden ser extensos
+                if ((detail.label === 'Ubicación:' || detail.label === 'Servicios:' || detail.label === 'Observaciones:') && detail.value.length > 40) {
                     const lines = doc.splitTextToSize(detail.value, 120);
                     doc.text(lines, 60, currentY);
                     currentY += (lines.length - 1) * lineHeight; // Ajustar altura para múltiples líneas
@@ -499,7 +687,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentY += lineHeight;
             });
 
-            // Instructions
+            // Instructions (ajustado Y para dar espacio)
             currentY += 20;
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(12);
@@ -533,13 +721,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // Footer
+            // Footer (ajustado Y)
             doc.setFillColor(245, 245, 245);
-            doc.rect(0, 260, 210, 37, 'F');
+            doc.rect(0, 270, 210, 27, 'F'); // Ajustado Y y alto
             doc.setTextColor(...gray);
             doc.setFontSize(8);
-            doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, 270, { align: 'center' });
-            doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 280, { align: 'center' });
+            doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, 280, { align: 'center' });
+            doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 290, { align: 'center' });
 
             // Download PDF
             // Usar el ID consistente en el nombre del archivo
@@ -615,13 +803,17 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCalendar();
         renderTimeSlots();
         
-        // Removed Telegram test function - now handled by backend
+        // NUEVO: Inicializar lógica de servicios y observaciones
+        initializeServiceSelection();
+        initializeObservationsToggle();
+        
         console.log('🎵 SpinBook initialized with secure Telegram notifications');
         console.log('Telegram notifications handled securely by backend ✅');
-        console.log('📝 Dynamic elements initialized:', {
+        console.log('🔧 Dynamic elements initialized:', {
             studioName: STUDIO_CONFIG.name,
             studioLogo: STUDIO_CONFIG.logo,
             studioAddress: STUDIO_CONFIG.address
         });
+        console.log('🎯 New features initialized: Services selection & Observations toggle');
     });
 });

@@ -23,6 +23,13 @@ const TELEGRAM_CONFIG = {
     parseMode: process.env.TELEGRAM_PARSE_MODE || 'Markdown'
 };
 
+// NUEVO: Mapeo de servicios para mostrar nombres legibles
+const SERVICE_NAMES = {
+    'produccion': 'Producción Musical',
+    'grabacion': 'Grabación de Voces/Instrumentos',
+    'mixmastering': 'Mix/Mastering'
+};
+
 // Función para generar ID consistente de 8 caracteres alfanuméricos
 function generateBookingId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -48,7 +55,7 @@ async function sendTelegramNotification(bookingData) {
     }
 
     try {
-        const { userData, date, slots, eventId } = bookingData;
+        const { userData, date, slots, services, eventId } = bookingData;
         
         // Formatear fecha correctamente
         const [year, month, day] = date.split('-').map(num => parseInt(num, 10));
@@ -61,10 +68,14 @@ async function sendTelegramNotification(bookingData) {
         });
         
         const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
+        
+        // NUEVO: Formatear servicios para la notificación
+        const serviceNames = services.map(service => SERVICE_NAMES[service] || service).join(', ');
+        
         const currentTime = new Date().toLocaleString('es-ES');
 
-        // Crear mensaje con formato Markdown
-        const message = `🎵 *NUEVA RESERVA SPINBOOK* 🎵
+        // NUEVO: Crear mensaje con formato Markdown incluyendo servicios y observaciones
+        let message = `🎵 *NUEVA RESERVA SPINBOOK* 🎵
 
 📋 *DETALLES DE LA RESERVA:*
 ────────────────────────────────────────
@@ -75,10 +86,16 @@ async function sendTelegramNotification(bookingData) {
 
 📅 *Fecha:* ${formattedDate}
 ⏰ *Horario:* ${timeSlots}
+🎼 *Servicios:* ${serviceNames}
 
-📍 *Ubicación:* ${STUDIO_CONFIG.address}
+📍 *Ubicación:* ${STUDIO_CONFIG.address}`;
 
-🎯 *ID Reserva:* \`${eventId}\`
+        // NUEVO: Agregar observaciones si existen
+        if (userData.observations && userData.observations.trim()) {
+            message += `\n💬 *Observaciones:* ${userData.observations.trim()}`;
+        }
+
+        message += `\n\n🎯 *ID Reserva:* \`${eventId}\`
 
 ────────────────────────────────────────
 ⏱️ *Reserva generada:* ${currentTime}
@@ -148,7 +165,8 @@ export default async function handler(request, response) {
     try {
         console.log('Received request body:', JSON.stringify(request.body, null, 2));
 
-        const { date, slots, userData } = request.body;
+        // NUEVO: Extraer servicios del request body
+        const { date, slots, services, userData } = request.body;
 
         // Validación más robusta
         if (!date || typeof date !== 'string') {
@@ -159,6 +177,12 @@ export default async function handler(request, response) {
         if (!slots || !Array.isArray(slots) || slots.length === 0) {
             console.error('Invalid slots:', slots);
             return response.status(400).json({ message: 'Slots are required and must be a non-empty array.' });
+        }
+
+        // NUEVO: Validar servicios
+        if (!services || !Array.isArray(services) || services.length === 0) {
+            console.error('Invalid services:', services);
+            return response.status(400).json({ message: 'Services are required and must be a non-empty array.' });
         }
 
         if (!userData || !userData.name || !userData.email || !userData.phone) {
@@ -186,6 +210,17 @@ export default async function handler(request, response) {
             return response.status(400).json({ message: 'All slots must be valid hour numbers (0-23).' });
         }
 
+        // NUEVO: Validar servicios
+        const validServices = services.filter(service => 
+            typeof service === 'string' && 
+            SERVICE_NAMES.hasOwnProperty(service)
+        );
+
+        if (validServices.length !== services.length) {
+            console.error('Invalid services format:', services);
+            return response.status(400).json({ message: 'All services must be valid service identifiers.' });
+        }
+
         const calendar = getGoogleCalendar();
         const calendarId = getCalendarId();
         const timeZone = getStudioTimezone();
@@ -198,6 +233,10 @@ export default async function handler(request, response) {
             hasToken: !!TELEGRAM_CONFIG.botToken,
             hasChatId: !!TELEGRAM_CONFIG.chatId
         });
+
+        // NUEVO: Log de servicios recibidos
+        console.log('Services received:', services);
+        console.log('Valid services:', validServices);
 
         // Verificar conflictos con mejor manejo de timezone
         try {
@@ -266,20 +305,31 @@ export default async function handler(request, response) {
         // Generar ID único consistente para la reserva
         const bookingId = generateBookingId();
         
-        // Descripción detallada para el calendario con dirección del estudio
-        const detailedDescription = `
+        // NUEVO: Formatear servicios para la descripción del evento
+        const serviceNames = validServices.map(service => SERVICE_NAMES[service]).join(', ');
+        
+        // NUEVO: Descripción detallada para el calendario incluyendo servicios y observaciones
+        let detailedDescription = `
 🎵 RESERVA SPINBOOK - ESTUDIO DE GRABACIÓN 🎵
 
 📋 DETALLES DE LA RESERVA:
-────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────
 
 👤 Cliente: ${userData.name}
 📧 Email: ${userData.email}
 📱 Teléfono: ${userData.phone}
 📅 Fecha: ${new Date(date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 ⏰ Horarios: ${sortedSlots.map(h => `${h}:00-${h+1}:00`).join(', ')}
+🎼 Servicios: ${serviceNames}
 📍 Ubicación: ${STUDIO_CONFIG.address}
-🎯 ID Reserva: ${bookingId}
+🎯 ID Reserva: ${bookingId}`;
+
+        // NUEVO: Agregar observaciones si existen
+        if (userData.observations && userData.observations.trim()) {
+            detailedDescription += `\n💬 Observaciones: ${userData.observations.trim()}`;
+        }
+
+        detailedDescription += `
 
 ⚠️ INSTRUCCIONES IMPORTANTES:
 • Llegar 10 minutos antes del horario reservado
@@ -291,11 +341,11 @@ export default async function handler(request, response) {
 
 Reserva generada automáticamente por SpinBook
 ${new Date().toLocaleString('es-ES')}
-        `.trim();
+        `;
 
         const event = {
             summary: `🎵 ${userData.name} - Sesión de Grabación`,
-            description: detailedDescription,
+            description: detailedDescription.trim(),
             start: {
                 dateTime: startDateTime,
                 timeZone: timeZone,
@@ -311,6 +361,8 @@ ${new Date().toLocaleString('es-ES')}
                     spinbook_client_phone: userData.phone,
                     spinbook_booking_id: bookingId,
                     spinbook_slots: JSON.stringify(sortedSlots),
+                    spinbook_services: JSON.stringify(validServices), // NUEVO: Almacenar servicios
+                    spinbook_observations: userData.observations || '', // NUEVO: Almacenar observaciones
                     spinbook_studio_address: STUDIO_CONFIG.address,
                     spinbook_created_at: new Date().toISOString()
                 }
@@ -339,12 +391,13 @@ ${new Date().toLocaleString('es-ES')}
         console.log('Event created successfully with ID:', createdEvent.data.id);
         console.log('Event HTML link:', createdEvent.data.htmlLink);
 
-        // Enviar notificación a Telegram desde el backend
+        // NUEVO: Enviar notificación a Telegram desde el backend con servicios
         console.log('Attempting to send Telegram notification...');
         const telegramResult = await sendTelegramNotification({
             userData: userData,
             date: date,
             slots: sortedSlots,
+            services: validServices, // NUEVO: Incluir servicios en notificación
             eventId: bookingId // Usar el ID consistente
         });
 
@@ -362,6 +415,8 @@ ${new Date().toLocaleString('es-ES')}
                 htmlLink: createdEvent.data.htmlLink,
                 summary: createdEvent.data.summary,
                 bookingId: bookingId,
+                services: serviceNames, // NUEVO: Incluir servicios en respuesta
+                observations: userData.observations || null, // NUEVO: Incluir observaciones
                 studioAddress: STUDIO_CONFIG.address,
                 description: 'Reserva confirmada en Google Calendar con todos los detalles.',
                 telegramNotification: telegramResult.success ? 'Enviada' : 'Falló (reserva confirmada igualmente)'
