@@ -4,20 +4,55 @@
 document.addEventListener('DOMContentLoaded', function() {
     // --- CONFIGURACIÓN DEL ESTUDIO (Variable modificable) ---
     const STUDIO_CONFIG = {
-        name: 'DJ SDC Producciones - SpinBook', //AGREGA NOMBRE DEL ESTUDIO/PRODUCTOR ANTES DEL GUION
-        address: 'Pasaje Las Hortensias 2703, Portal San Francisco, Temuco', // AGREGA LA DIRECCIÓN DEL ESTUDIO/PRODUCTOR
+        name: 'Nombre Estudio - SpinBook', //AGREGA NOMBRE DEL ESTUDIO/PRODUCTOR ANTES DEL GUION
+        logo: 'icon.png', // AGREGA LA RUTA DEL LOGO/ICONO DEL ESTUDIO
+        address: 'Dirección Estudio', // AGREGA LA DIRECCIÓN DEL ESTUDIO/PRODUCTOR
         contact: {
-            email: 'djsdcblak@gmail.com', // AGREGA EL EMAIL DEL ESTUDIO/PRODUCTOR
-            phone: '+56 9 4271 3685' // AGREGA EL TELÉFONO DEL ESTUDIO/PRODUCTOR
+            email: 'nombre@direccion.mail', // AGREGA EL EMAIL DEL ESTUDIO/PRODUCTOR
+            phone: '+56 0 1234 5678' // AGREGA EL TELÉFONO DEL ESTUDIO/PRODUCTOR
         }
     };
 
     // --- CONFIGURACIÓN DE NOTIFICACIONES TELEGRAM (MOVIDA AL BACKEND) ---
-    // ✅ MEJORADO: Ya no se almacenan datos sensibles en el frontend
+    // Ya no se almacenan datos sensibles en el frontend
     const TELEGRAM_CONFIG = {
         enabled: true, // Se puede mantener aquí para controlar si mostrar opciones de Telegram en el UI
-        // botToken y chatId ahora se manejan en el backend por seguridad
     };
+
+    // --- FUNCIÓN PARA OBTENER VERSIÓN DESDE PACKAGE.JSON ---
+    async function getAppVersion() {
+        try {
+            const response = await fetch('/package.json');
+            const packageData = await response.json();
+            return packageData.version || '1.0.1';
+        } catch (error) {
+            console.warn('Could not fetch version from package.json:', error);
+            return '1.0.1'; // Fallback version
+        }
+    }
+
+    // --- FUNCIÓN PARA INICIALIZAR ELEMENTOS DINÁMICOS ---
+    async function initializeDynamicElements() {
+        // Actualizar logo
+        const logoElement = document.getElementById('studio-logo');
+        if (logoElement) {
+            logoElement.src = STUDIO_CONFIG.logo;
+            logoElement.alt = `${STUDIO_CONFIG.name} Logo`;
+        }
+
+        // Actualizar título
+        const titleElement = document.getElementById('studio-title');
+        if (titleElement) {
+            titleElement.textContent = STUDIO_CONFIG.name;
+        }
+
+        // Actualizar versión desde package.json
+        const version = await getAppVersion();
+        const versionElement = document.getElementById('app-version');
+        if (versionElement) {
+            versionElement.textContent = `Version ${version}`;
+        }
+    }
 
     // --- STATE MANAGEMENT ---
     let currentDate = new Date();
@@ -48,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const availableHours = [17, 18, 19, 20, 21];
 
     // --- UTILITY FUNCTIONS ---
-    // NUEVA FUNCIÓN: Formatear fecha correctamente evitando problemas de timezone
+    // Formatear fecha correctamente evitando problemas de timezone
     function formatDateCorrectly(dateString) {
         // Parse manual para evitar problemas de timezone
         const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
@@ -62,14 +97,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // NUEVA FUNCIÓN: Crear objeto Date correcto desde string YYYY-MM-DD
+    // Crear objeto Date correcto desde string YYYY-MM-DD
     function createDateFromString(dateString) {
         const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
         return new Date(year, month - 1, day); // mes es 0-indexed en JavaScript
     }
-
-    // --- ELIMINADAS: sendTelegramNotification y testTelegramConfiguration ---
-    // ✅ MEJORADO: Estas funciones ahora se ejecutan en el backend por seguridad
 
     // --- CALENDAR LOGIC ---
     function renderCalendar() {
@@ -289,17 +321,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             // Store booking data for PDF generation
-            // CORRECCIÓN: Almacenar la fecha correctamente sin problemas de timezone
+            // Almacenar la fecha correctamente sin problemas de timezone
             lastBookingData = {
                 userData: bookingData.userData,
                 date: bookingData.date, // Mantenemos el formato YYYY-MM-DD
                 selectedDateObject: selectedDate, // Agregamos el objeto Date original para referencia
                 slots: selectedSlots,
-                eventId: result.event.id, // 🔧 CORRECCIÓN: Usar el ID consistente del backend
+                eventId: result.event.id, // Usar el ID consistente del backend
                 createdAt: new Date()
             };
             
-            // ✅ MEJORADO: La notificación de Telegram ahora se envía desde el backend
+            // La notificación de Telegram ahora se envía desde el backend
             console.log('✅ Booking created successfully. Telegram notification sent from backend.');
             
             // Show success modal instead of message
@@ -329,15 +361,15 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-email').textContent = userData.email;
         document.getElementById('modal-phone').textContent = userData.phone;
         
-        // CORRECCIÓN: Usar la función que formatea correctamente la fecha
+        // Usar la función que formatea correctamente la fecha
         document.getElementById('modal-date').textContent = formatDateCorrectly(date);
         
         document.getElementById('modal-time').textContent = slots.map(h => `${h}:00-${h+1}:00`).join(', ');
         
-        // 🔧 CORRECCIÓN: Mostrar el ID consistente (sin substring ya que ahora es SB-XXXXXXXX)
+        // Mostrar el ID consistente (sin substring ya que ahora es SB-XXXXXXXX)
         document.getElementById('modal-id').textContent = eventId;
         
-        // MEJORA: Agregar dirección del estudio en el modal
+        // Agregar dirección del estudio en el modal
         document.getElementById('modal-address').textContent = STUDIO_CONFIG.address;
         
         // Show modal
@@ -349,11 +381,11 @@ document.addEventListener('DOMContentLoaded', function() {
         successModal.classList.add('hidden');
         successModal.classList.remove('flex');
         
-        // MEJORA: Refrescar horarios después de cerrar el modal
+        // Refrescar horarios después de cerrar el modal
         refreshBookingState();
     }
 
-    // --- NEW: REFRESH BOOKING STATE ---
+    // --- REFRESH BOOKING STATE ---
     async function refreshBookingState() {
         if (selectedDate) {
             // Refresh the selected date to show new busy slots
@@ -398,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.warn('Could not load icon.png, continuing without logo');
                 completePDFGeneration();
             };
-            img.src = 'icon.png';
+            img.src = STUDIO_CONFIG.logo;
         } catch (error) {
             console.warn('Error loading icon:', error);
             completePDFGeneration();
@@ -434,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const lineHeight = 12;
             let currentY = startY;
 
-            // CORRECCIÓN: Usar la función que formatea correctamente la fecha
+            // Usar la función que formatea correctamente la fecha
             const formattedDate = formatDateCorrectly(date);
 
             const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
@@ -445,8 +477,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 { label: 'Teléfono:', value: userData.phone },
                 { label: 'Fecha:', value: formattedDate },
                 { label: 'Horario:', value: timeSlots },
-                { label: 'Ubicación:', value: STUDIO_CONFIG.address }, // MEJORA: Dirección agregada
-                { label: 'ID de Reserva:', value: eventId } // 🔧 CORRECCIÓN: Usar el ID completo consistente
+                { label: 'Ubicación:', value: STUDIO_CONFIG.address }, 
+                { label: 'ID de Reserva:', value: eventId } 
             ];
 
             doc.setFontSize(11);
@@ -455,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 doc.text(detail.label, 20, currentY);
                 doc.setFont('helvetica', 'normal');
                 
-                // MEJORA: Manejo de texto largo para la dirección
+                // Manejo de texto largo para la dirección
                 if (detail.label === 'Ubicación:' && detail.value.length > 40) {
                     const lines = doc.splitTextToSize(detail.value, 120);
                     doc.text(lines, 60, currentY);
@@ -477,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(10);
 
-            // MEJORA: Instrucciones actualizadas con dirección
+            // Instrucciones actualizadas con dirección
             const instructions = [
                 '• Llega 10 minutos antes de tu sesión',
                 '• Presenta este ticket al llegar al estudio',
@@ -510,11 +542,11 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 280, { align: 'center' });
 
             // Download PDF
-            // 🔧 CORRECCIÓN: Usar el ID consistente en el nombre del archivo
+            // Usar el ID consistente en el nombre del archivo
             const filename = `SpinBook-Reserva-${eventId}.pdf`;
             doc.save(filename);
             
-            // MEJORA: Cerrar modal y refrescar después de descargar
+            // Cerrar modal y refrescar después de descargar
             hideSuccessModal();
         }
     }
@@ -560,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
     bookingForm.addEventListener('submit', handleBookingSubmit);
 
     // Modal event listeners
-    // 🔧 CORRECCIÓN: Solo el botón de descarga PDF queda, que también cierra el modal
+    // Solo el botón de descarga PDF queda, que también cierra el modal
     downloadPdfBtn.addEventListener('click', generatePDF);
 
     // Close modal when clicking outside
@@ -578,10 +610,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // --- INITIALIZATION ---
-    renderCalendar();
-    renderTimeSlots();
-    
-    // ✅ MEJORADO: Removed Telegram test function - now handled by backend
-    console.log('🎵 SpinBook initialized with secure Telegram notifications');
-    console.log('Telegram notifications handled securely by backend ✅');
+    // Inicializar elementos dinámicos primero
+    initializeDynamicElements().then(() => {
+        renderCalendar();
+        renderTimeSlots();
+        
+        // Removed Telegram test function - now handled by backend
+        console.log('🎵 SpinBook initialized with secure Telegram notifications');
+        console.log('Telegram notifications handled securely by backend ✅');
+        console.log('📝 Dynamic elements initialized:', {
+            studioName: STUDIO_CONFIG.name,
+            studioLogo: STUDIO_CONFIG.logo,
+            studioAddress: STUDIO_CONFIG.address
+        });
+    });
 });
