@@ -228,7 +228,6 @@ El sistema genera comprobantes PDF con:
 - ✅ Validación de configuración antes de enviar
 - 🔄 Sistema de respaldo: la reserva se confirma aunque Telegram falle
 
-```
 
 ## 📊 Monitoreo y Logs
 
