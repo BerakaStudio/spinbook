@@ -12,6 +12,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // --- CONFIGURACIÓN DE NOTIFICACIONES TELEGRAM ---
+    const TELEGRAM_CONFIG = {
+        enabled: true, // Cambiar a false para desactivar notificaciones
+        botToken: '8139850560:AAEtMWZx8maY_rgSHdpb-XfTcITGKobaHg4', // Reemplazar con tu token de BotFather
+        chatId: '1033500550', // Reemplazar con tu Chat ID
+        // Opcional: Configuración adicional
+        silent: false, // true = notificación silenciosa
+        parseMode: 'Markdown' // 'Markdown' o 'HTML'
+    };
+
     // --- STATE MANAGEMENT ---
     let currentDate = new Date();
     let selectedDate = null;
@@ -59,6 +69,139 @@ document.addEventListener('DOMContentLoaded', function() {
     function createDateFromString(dateString) {
         const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
         return new Date(year, month - 1, day); // mes es 0-indexed en JavaScript
+    }
+
+    // --- NUEVA FUNCIÓN: NOTIFICACIÓN TELEGRAM ---
+    async function sendTelegramNotification(bookingData) {
+        // Verificar si las notificaciones están habilitadas
+        if (!TELEGRAM_CONFIG.enabled || !TELEGRAM_CONFIG.botToken || !TELEGRAM_CONFIG.chatId) {
+            console.log('Telegram notifications disabled or not configured');
+            return;
+        }
+
+        // Verificar configuración básica
+        if (TELEGRAM_CONFIG.botToken === 'TU_BOT_TOKEN_AQUI' || TELEGRAM_CONFIG.chatId === 'TU_CHAT_ID_AQUI') {
+            console.warn('Telegram configuration incomplete. Please update TELEGRAM_CONFIG with your bot token and chat ID.');
+            return;
+        }
+
+        try {
+            const { userData, date, slots, eventId } = bookingData;
+            const formattedDate = formatDateCorrectly(date);
+            const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
+            const currentTime = new Date().toLocaleString('es-ES');
+
+            // Crear mensaje con formato Markdown
+            const message = `🎵 *NUEVA RESERVA SPINBOOK* 🎵
+
+📋 *DETALLES DE LA RESERVA:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👤 *Cliente:* ${userData.name}
+📧 *Email:* ${userData.email}
+📱 *Teléfono:* ${userData.phone}
+
+📅 *Fecha:* ${formattedDate}
+⏰ *Horario:* ${timeSlots}
+
+📍 *Ubicación:* ${STUDIO_CONFIG.address}
+
+🎯 *ID Reserva:* \`${eventId.substring(0, 12).toUpperCase()}\`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏱️ *Reserva generada:* ${currentTime}
+🏢 *Estudio:* ${STUDIO_CONFIG.name}
+
+✅ *La reserva ha sido confirmada en Google Calendar*`;
+
+            const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendMessage`;
+            
+            const payload = {
+                chat_id: TELEGRAM_CONFIG.chatId,
+                text: message,
+                parse_mode: TELEGRAM_CONFIG.parseMode,
+                disable_notification: TELEGRAM_CONFIG.silent
+            };
+
+            console.log('Sending Telegram notification...');
+            
+            const response = await fetch(telegramApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Telegram notification sent successfully:', result.result.message_id);
+            } else {
+                const errorData = await response.json();
+                console.error('❌ Telegram notification failed:', errorData);
+                
+                // Mostrar error específico si es problema de configuración
+                if (errorData.error_code === 400) {
+                    console.error('Bad Request - Check your bot token and chat ID');
+                } else if (errorData.error_code === 401) {
+                    console.error('Unauthorized - Invalid bot token');
+                } else if (errorData.error_code === 403) {
+                    console.error('Forbidden - Bot was blocked by user or chat not found');
+                }
+            }
+
+        } catch (error) {
+            console.error('Error sending Telegram notification:', error);
+            // No interferir con el flujo principal aunque falle la notificación
+        }
+    }
+
+    // --- NUEVA FUNCIÓN: TEST DE CONFIGURACIÓN TELEGRAM ---
+    async function testTelegramConfiguration() {
+        if (!TELEGRAM_CONFIG.enabled || TELEGRAM_CONFIG.botToken === 'TU_BOT_TOKEN_AQUI') {
+            console.log('Telegram not configured, skipping test');
+            return;
+        }
+
+        try {
+            const testMessage = `🧪 *TEST SPINBOOK*
+
+Este es un mensaje de prueba del sistema de notificaciones.
+
+✅ La configuración de Telegram está funcionando correctamente.
+
+⚙️ *Configuración:*
+• Bot Token: ${TELEGRAM_CONFIG.botToken.substring(0, 10)}...
+• Chat ID: ${TELEGRAM_CONFIG.chatId}
+• Parse Mode: ${TELEGRAM_CONFIG.parseMode}
+
+🏢 ${STUDIO_CONFIG.name}
+📍 ${STUDIO_CONFIG.address}
+
+⏱️ ${new Date().toLocaleString('es-ES')}`;
+
+            const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendMessage`;
+            
+            const response = await fetch(telegramApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: TELEGRAM_CONFIG.chatId,
+                    text: testMessage,
+                    parse_mode: 'Markdown'
+                })
+            });
+
+            if (response.ok) {
+                console.log('✅ Telegram test message sent successfully');
+            } else {
+                const errorData = await response.json();
+                console.error('❌ Telegram test failed:', errorData);
+            }
+
+        } catch (error) {
+            console.error('Error testing Telegram configuration:', error);
+        }
     }
 
     // --- CALENDAR LOGIC ---
@@ -288,6 +431,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 eventId: result.event.id,
                 createdAt: new Date()
             };
+            
+            // NUEVA FUNCIONALIDAD: Enviar notificación a Telegram
+            console.log('Sending Telegram notification...');
+            await sendTelegramNotification({
+                userData: bookingData.userData,
+                date: bookingData.date,
+                slots: selectedSlots,
+                eventId: result.event.id
+            });
             
             // Show success modal instead of message
             showSuccessModal();
@@ -564,4 +716,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- INITIALIZATION ---
     renderCalendar();
     renderTimeSlots();
+    
+    // NUEVA FUNCIONALIDAD: Test de configuración Telegram al cargar (opcional)
+    // Descomenta la siguiente línea si quieres probar la configuración al cargar la página
+    testTelegramConfiguration();
+    
+    console.log('🎵 SpinBook initialized with Telegram notifications');
+    console.log('Telegram enabled:', TELEGRAM_CONFIG.enabled);
+    if (TELEGRAM_CONFIG.enabled && TELEGRAM_CONFIG.botToken !== 'TU_BOT_TOKEN_AQUI') {
+        console.log('Telegram bot configured ✅');
+    } else {
+        console.log('Telegram bot not configured - update TELEGRAM_CONFIG');
+    }
 });
