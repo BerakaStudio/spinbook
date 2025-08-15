@@ -1,11 +1,11 @@
 // File: api/test-config.js
-// MEJORADO: Endpoint para validar la configuración de SpinBook incluyendo Telegram
+// Endpoint para validar la configuración de SpinBook incluyendo Telegram
 // Incluye test de calendar access y validación de configuración de Telegram
 // © José Lobos Sanhueza, Beraka Studio, 2025
 
 import { validateConfiguration, getEnvironmentInfo } from './_utils.js';
 
-// ✅ NUEVA: Configuración de Telegram desde variables de entorno
+// Configuración de Telegram desde variables de entorno
 const TELEGRAM_CONFIG = {
     enabled: process.env.TELEGRAM_ENABLED === 'true' || process.env.TELEGRAM_ENABLED === '1',
     botToken: process.env.TELEGRAM_BOT_TOKEN,
@@ -14,7 +14,7 @@ const TELEGRAM_CONFIG = {
     parseMode: process.env.TELEGRAM_PARSE_MODE || 'Markdown'
 };
 
-// ✅ NUEVA FUNCIÓN: Validar configuración de Telegram
+// Validar configuración de Telegram
 async function validateTelegramConfiguration() {
     console.log('🔍 VALIDATING TELEGRAM CONFIGURATION...');
     
@@ -143,7 +143,7 @@ export default async function handler(request, response) {
         // Validar configuración completa con test de calendar
         const config = await validateConfiguration();
         
-        // ✅ NUEVO: Validar configuración de Telegram
+        // Validar configuración de Telegram
         const telegramValidation = await validateTelegramConfiguration();
         
         const result = {
@@ -158,7 +158,7 @@ export default async function handler(request, response) {
                 accessRole: config.calendarAccess.accessRole,
                 validatedAt: config.timestamp
             },
-            // ✅ NUEVO: Información de Telegram
+            // Información de Telegram
             telegram: {
                 enabled: telegramValidation.isEnabled,
                 configured: telegramValidation.isConfigured,
@@ -182,7 +182,7 @@ export default async function handler(request, response) {
             }
         };
         
-        // MEJORADO: Análisis más detallado de la configuración
+        // Análisis más detallado de la configuración
         if (!envInfo.hasStudioName) {
             result.recommendations.push('ðŸ'¡ Consider setting STUDIO_NAME environment variable for customization');
         }
@@ -199,7 +199,7 @@ export default async function handler(request, response) {
             result.recommendations.push('ðŸ'¡ Consider setting STUDIO_PHONE environment variable for contact info');
         }
         
-        // ✅ NUEVO: Recomendaciones para Telegram
+        // Recomendaciones para Telegram
         if (!telegramValidation.isEnabled) {
             result.recommendations.push('ðŸ'¡ Enable Telegram notifications by setting TELEGRAM_ENABLED=true');
         } else if (!telegramValidation.isConfigured) {
@@ -214,7 +214,7 @@ export default async function handler(request, response) {
             result.recommendations.push(...telegramValidation.warnings.map(warn => `âš ï¸ Telegram: ${warn}`));
         }
         
-        // NUEVO: Comparación de timezone entre calendar y estudio
+        // Comparación de timezone entre calendar y estudio
         if (config.calendarAccess.timeZone && config.calendarAccess.timeZone !== config.timeZone) {
             result.recommendations.push(`âš ï¸ Calendar timezone (${config.calendarAccess.timeZone}) differs from studio timezone (${config.timeZone}). This may cause scheduling conflicts.`);
             result.healthChecks.timezoneConsistency = 'âš ï¸ Warning - Timezone mismatch';
@@ -222,7 +222,7 @@ export default async function handler(request, response) {
             result.healthChecks.timezoneConsistency = 'âœ… Timezones aligned';
         }
         
-        // NUEVO: Verificar permisos de calendar
+        // Verificar permisos de calendar
         if (config.calendarAccess.accessRole) {
             if (['owner', 'writer'].includes(config.calendarAccess.accessRole)) {
                 result.healthChecks.calendarPermissions = 'âœ… Sufficient permissions';
@@ -234,7 +234,7 @@ export default async function handler(request, response) {
             }
         }
         
-        // NUEVO: Test de fecha/hora actual
+        // Test de fecha/hora actual
         try {
             const now = new Date();
             const studioTime = now.toLocaleString('es-ES', { 
@@ -263,7 +263,7 @@ export default async function handler(request, response) {
         console.error('Error:', error.message);
         console.error('Stack:', error.stack);
         
-        // MEJORADO: Diagnóstico más específico de errores
+        // Diagnóstico más específico de errores
         const errorResult = {
             status: 'error',
             message: 'SpinBook configuration validation failed',
@@ -325,7 +325,7 @@ export default async function handler(request, response) {
             ];
         }
         
-        // ✅ NUEVO: Agregar troubleshooting para Telegram
+        // Agregar troubleshooting para Telegram
         errorResult.troubleshooting.push('For Telegram notifications, set TELEGRAM_ENABLED=true, TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID');
         errorResult.troubleshooting.push('Check Vercel function logs for detailed error information');
         errorResult.troubleshooting.push('Use the browser console to see client-side errors');

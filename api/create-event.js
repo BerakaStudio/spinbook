@@ -6,15 +6,15 @@ import { getGoogleCalendar, getCalendarId, getStudioTimezone } from './_utils.js
 
 // Configuración del estudio como variable modificable
 const STUDIO_CONFIG = {
-    name: process.env.STUDIO_NAME || 'SpinBook Studio',
-    address: process.env.STUDIO_ADDRESS || 'Pasaje Las Hortensias 2703, Portal San Francisco, Temuco',
+    name: process.env.STUDIO_NAME || 'Nombre del Estudio', // Nombre del estudio o productor
+    address: process.env.STUDIO_ADDRESS || 'Calle 000, Ciudad, País', // Dirección del estudio o productor
     contact: {
-        email: process.env.STUDIO_EMAIL || 'info@spinbook.com',
-        phone: process.env.STUDIO_PHONE || '+56 9 1234 5678'
+        email: process.env.STUDIO_EMAIL || 'info@correo.com', // Email del estudio o productor
+        phone: process.env.STUDIO_PHONE || '+56 9 1234 5678' // Teléfono del estudio o productor
     }
 };
 
-// ✅ NUEVA: Configuración de Telegram desde variables de entorno
+// Configuración de Telegram desde variables de entorno
 const TELEGRAM_CONFIG = {
     enabled: process.env.TELEGRAM_ENABLED === 'true' || process.env.TELEGRAM_ENABLED === '1',
     botToken: process.env.TELEGRAM_BOT_TOKEN,
@@ -23,7 +23,7 @@ const TELEGRAM_CONFIG = {
     parseMode: process.env.TELEGRAM_PARSE_MODE || 'Markdown'
 };
 
-// 🔧 CORRECCIÓN: Función para generar ID consistente de 8 caracteres alfanuméricos
+// Función para generar ID consistente de 8 caracteres alfanuméricos
 function generateBookingId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -33,7 +33,7 @@ function generateBookingId() {
     return `SB-${result}`;
 }
 
-// ✅ NUEVA FUNCIÓN: NOTIFICACIÓN TELEGRAM DESDE BACKEND
+// Notificación Telegram desde Backend
 async function sendTelegramNotification(bookingData) {
     // Verificar si las notificaciones están habilitadas
     if (!TELEGRAM_CONFIG.enabled || !TELEGRAM_CONFIG.botToken || !TELEGRAM_CONFIG.chatId) {
@@ -199,11 +199,11 @@ export default async function handler(request, response) {
             hasChatId: !!TELEGRAM_CONFIG.chatId
         });
 
-        // CORRECCIÓN: Verificar conflictos con mejor manejo de timezone
+        // Verificar conflictos con mejor manejo de timezone
         try {
             console.log('Checking for existing bookings...');
             
-            // MEJORA: Usar el mismo formato de fecha que en get-events.js
+            // Usar el mismo formato de fecha que en get-events.js
             const startDate = new Date(`${date}T00:00:00`);
             const endDate = new Date(`${date}T23:59:59`);
             
@@ -254,7 +254,7 @@ export default async function handler(request, response) {
         const startTime = sortedSlots[0];
         const endTime = sortedSlots[sortedSlots.length - 1] + 1;
 
-        // CORRECCIÓN: Formato correcto para Google Calendar API con timezone
+        // Formato correcto para Google Calendar API con timezone
         const startDateTime = `${date}T${String(startTime).padStart(2, '0')}:00:00`;
         const endDateTime = `${date}T${String(endTime).padStart(2, '0')}:00:00`;
 
@@ -263,7 +263,7 @@ export default async function handler(request, response) {
         console.log('End:', endDateTime);
         console.log('TimeZone:', timeZone);
 
-        // 🔧 CORRECCIÓN: Generar ID único consistente para la reserva
+        // Generar ID único consistente para la reserva
         const bookingId = generateBookingId();
         
         // Descripción detallada para el calendario con dirección del estudio
@@ -339,13 +339,13 @@ ${new Date().toLocaleString('es-ES')}
         console.log('Event created successfully with ID:', createdEvent.data.id);
         console.log('Event HTML link:', createdEvent.data.htmlLink);
 
-        // ✅ NUEVA FUNCIONALIDAD: Enviar notificación a Telegram desde el backend
+        // Enviar notificación a Telegram desde el backend
         console.log('Attempting to send Telegram notification...');
         const telegramResult = await sendTelegramNotification({
             userData: userData,
             date: date,
             slots: sortedSlots,
-            eventId: bookingId // 🔧 CORRECCIÓN: Usar el ID consistente
+            eventId: bookingId // Usar el ID consistente
         });
 
         if (telegramResult.success) {
@@ -358,7 +358,7 @@ ${new Date().toLocaleString('es-ES')}
         return response.status(201).json({ 
             message: 'Reserva confirmada con éxito! Tu reserva ha sido registrada en el calendario.',
             event: {
-                id: bookingId, // 🔧 CORRECCIÓN: Devolver el ID consistente
+                id: bookingId, // Devolver el ID consistente
                 htmlLink: createdEvent.data.htmlLink,
                 summary: createdEvent.data.summary,
                 bookingId: bookingId,
@@ -417,7 +417,7 @@ ${new Date().toLocaleString('es-ES')}
     }
 }
 
-// NUEVA FUNCIÓN: Obtener offset de timezone
+// Obtener offset de timezone
 function getTimezoneOffset(timeZone, date) {
     try {
         const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
@@ -429,7 +429,7 @@ function getTimezoneOffset(timeZone, date) {
     }
 }
 
-// NUEVA FUNCIÓN: Convertir tiempo a zona horaria del estudio
+// Convertir tiempo a zona horaria del estudio
 function convertToStudioTime(date, timeZone) {
     try {
         const formatter = new Intl.DateTimeFormat('en-CA', {

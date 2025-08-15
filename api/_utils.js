@@ -29,7 +29,7 @@ export function getGoogleCalendar() {
     console.log('✓ Client email found:', clientEmail);
     console.log('✓ Private key length:', privateKey.length, 'characters');
 
-    // MEJORA: Procesamiento más robusto de la clave privada
+    // Procesamiento más robusto de la clave privada
     let processedPrivateKey = privateKey;
     
     // Manejar diferentes formatos de entrada de la clave privada
@@ -53,7 +53,7 @@ export function getGoogleCalendar() {
         throw new Error("Private key format is invalid - missing END marker");
     }
 
-    // MEJORA: Validación del formato del email de la cuenta de servicio
+    // Validación del formato del email de la cuenta de servicio
     const serviceAccountEmailPattern = /^[a-zA-Z0-9-_]+@[a-zA-Z0-9-_]+\.iam\.gserviceaccount\.com$/;
     if (!serviceAccountEmailPattern.test(clientEmail)) {
         console.warn('⚠️  WARNING: Client email format doesn\'t match expected service account pattern');
@@ -116,7 +116,7 @@ export function getCalendarId() {
         throw new Error("GOOGLE_CALENDAR_ID is not set in environment variables. Please configure it in your deployment settings.");
     }
     
-    // MEJORA: Validación del formato del Calendar ID
+    // Validación del formato del Calendar ID
     if (calendarId.includes('@group.calendar.google.com')) {
         console.log('✓ Calendar ID format validated (group calendar)');
     } else if (calendarId.includes('@gmail.com')) {
@@ -150,7 +150,7 @@ export function getStudioTimezone() {
         throw new Error("Studio timezone is not configured. Please set STUDIO_TIMEZONE environment variable.");
     }
     
-    // MEJORA: Validación más robusta del timezone
+    // Validación más robusta del timezone
     try {
         // Test si el timezone es válido intentando usarlo
         const testDate = new Date();
@@ -185,7 +185,7 @@ export function getStudioTimezone() {
 }
 
 /**
- * MEJORADO: Función para validar la configuración completa con test de calendar
+ * Función para validar la configuración completa con test de calendar
  * Verifica que todas las variables de entorno estén configuradas correctamente.
  * @returns {object} Configuración validada
  */
@@ -197,7 +197,7 @@ export async function validateConfiguration() {
         const calendarId = getCalendarId();
         const timeZone = getStudioTimezone();
         
-        // NUEVO: Test de acceso real al calendario
+        // Test de acceso real al calendario
         console.log('🔍 Testing calendar access...');
         try {
             const testResponse = await calendar.calendars.get({
@@ -243,7 +243,7 @@ export async function validateConfiguration() {
 }
 
 /**
- * MEJORADO: Función para obtener información del entorno
+ * Función para obtener información del entorno
  * Útil para debugging y logs del sistema.
  * @returns {object} Información del entorno (sin datos sensibles)
  */
@@ -269,7 +269,7 @@ export function getEnvironmentInfo() {
 }
 
 /**
- * NUEVA: Función helper para formatear fechas para Google Calendar API
+ * Función helper para formatear fechas para Google Calendar API
  * Asegura el formato correcto con timezone
  * @param {string} dateString - Fecha en formato YYYY-MM-DD
  * @param {number} hour - Hora (0-23)
@@ -298,7 +298,7 @@ export function formatDateTimeForCalendar(dateString, hour, timeZone) {
 }
 
 /**
- * NUEVA: Función helper para convertir timestamp a zona horaria del estudio
+ * Función helper para convertir timestamp a zona horaria del estudio
  * @param {Date} date - Fecha a convertir
  * @param {string} timeZone - IANA timezone
  * @returns {Date} Fecha convertida a la zona horaria del estudio

@@ -26,8 +26,8 @@ SpinBook es una aplicación web para gestionar reservas de estudio de grabación
 
 ### 2. Bot de Telegram (Opcional)
 
-1. Crear bot con [@BotFather](https://t.me/botfather)
-2. Obtener el token del bot
+1. Buscar el bot @SpinBookBot
+2. Iniciar chat con SpinBookBot
 3. Obtener el Chat ID donde recibir notificaciones
 4. Configurar las variables de Telegram en Vercel
 
@@ -49,7 +49,7 @@ STUDIO_PHONE=Teléfono con código de país
 # OPCIONALES - Notificaciones Telegram
 TELEGRAM_ENABLED=true
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyZ
-TELEGRAM_CHAT_ID=-1001234567890
+TELEGRAM_CHAT_ID=-0001234567890
 TELEGRAM_SILENT=false
 TELEGRAM_PARSE_MODE=Markdown
 ```
@@ -63,22 +63,11 @@ TELEGRAM_PARSE_MODE=Markdown
 
 ## 🤖 Configuración de Telegram
 
-### Crear el Bot
-1. Hablar con [@BotFather](https://t.me/botfather) en Telegram
-2. Usar comando `/newbot`
-3. Seguir instrucciones para nombrar el bot
-4. Copiar el token proporcionado
-
 ### Obtener Chat ID
 **Para chat personal:**
 1. Enviar mensaje a tu bot
 2. Visitar: `https://api.telegram.org/bot<TU_TOKEN>/getUpdates`
 3. Buscar el `chat.id` en la respuesta
-
-**Para grupo/canal:**
-1. Agregar bot al grupo/canal
-2. Enviar mensaje mencionando al bot
-3. Usar la misma URL para obtener el Chat ID (será negativo)
 
 ### Variables de Telegram
 
@@ -104,7 +93,7 @@ TELEGRAM_PARSE_MODE=Markdown
 ├── index.html            # Interfaz de usuario
 ├── styles.css            # Estilos personalizados
 ├── package.json          # Dependencias
-├── icon.png              # Icono para PDFs
+├── icon.png              # Icono para PDFs y favicon
 └── README.md             # Documentación
 ```
 
@@ -130,10 +119,10 @@ Modifica las variables de entorno o la configuración en los archivos:
 ```javascript
 const STUDIO_CONFIG = {
     name: 'Mi Estudio Musical - SpinBook',
-    address: 'Mi Dirección Completa, Ciudad',
+    address: 'Mi Dirección Completa, Ciudad, País',
     contact: {
         email: 'contacto@miestudio.com',
-        phone: '+56 9 8765 4321'
+        phone: '+56 9 1234 5678'
     }
 };
 ```
@@ -141,10 +130,10 @@ const STUDIO_CONFIG = {
 **En create-event.js:**
 ```javascript
 const STUDIO_CONFIG = {
-    name: process.env.STUDIO_NAME || 'SpinBook Studio',
-    address: process.env.STUDIO_ADDRESS || 'Tu dirección aquí',
+    name: process.env.STUDIO_NAME || 'Mi Estudio Musical - SpinBook',
+    address: process.env.STUDIO_ADDRESS || 'Mi Dirección Completa, Ciudad, País',
     contact: {
-        email: process.env.STUDIO_EMAIL || 'info@spinbook.com',
+        email: process.env.STUDIO_EMAIL || 'contacto@miestudio.com',
         phone: process.env.STUDIO_PHONE || '+56 9 1234 5678'
     }
 };

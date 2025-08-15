@@ -57,12 +57,12 @@ export default async function handler(request, response) {
         console.log('Calendar ID:', calendarId);
         console.log('Timezone:', timeZone);
 
-        // CORRECCIÓN: Formato correcto para Google Calendar API con timezone
+        // Formato correcto para Google Calendar API con timezone
         // Usar formato ISO 8601 completo con zona horaria
         const startDateTime = `${date}T00:00:00`;
         const endDateTime = `${date}T23:59:59`;
 
-        // NUEVA MEJORA: Crear objetos Date para validar y formatear correctamente
+        // Crear objetos Date para validar y formatear correctamente
         const startDate = new Date(`${date}T00:00:00`);
         const endDate = new Date(`${date}T23:59:59`);
         
@@ -117,7 +117,7 @@ export default async function handler(request, response) {
 
             try {
                 if (event.start && event.start.dateTime) {
-                    // MEJORA: Mejor manejo de timezone en eventos
+                    // Mejor manejo de timezone en eventos
                     const eventStartTime = new Date(event.start.dateTime);
                     const eventEndTime = new Date(event.end.dateTime);
                     
@@ -214,7 +214,7 @@ export default async function handler(request, response) {
     }
 }
 
-// NUEVA FUNCIÓN: Obtener offset de timezone
+// Obtener offset de timezone
 function getTimezoneOffset(timeZone, date) {
     try {
         const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
@@ -226,7 +226,7 @@ function getTimezoneOffset(timeZone, date) {
     }
 }
 
-// NUEVA FUNCIÓN: Convertir tiempo a zona horaria del estudio
+// Convertir tiempo a zona horaria del estudio
 function convertToStudioTime(date, timeZone) {
     try {
         // Crear formatter para la zona horaria del estudio
