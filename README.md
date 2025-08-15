@@ -65,7 +65,7 @@ TELEGRAM_PARSE_MODE=Markdown
 
 ### Obtener Chat ID
 **Para chat personal:**
-1. Enviar mensaje a tu bot
+1. Enviar mensaje al bot SpinBookBot
 2. Visitar: `https://api.telegram.org/bot<TU_TOKEN>/getUpdates`
 3. Buscar el `chat.id` en la respuesta
 
