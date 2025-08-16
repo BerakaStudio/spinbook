@@ -31,10 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/package.json');
             const packageData = await response.json();
-            return packageData.version || '1.0.1';
+            return packageData.version || '1.0.2';
         } catch (error) {
             console.warn('Could not fetch version from package.json:', error);
-            return '1.0.1'; // Fallback version
+            return '1.0.2'; // Fallback version
         }
     }
 
@@ -575,167 +575,197 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCalendar();
     }
 
-    // --- PDF GENERATION ---
+    // --- FUNCIÓN PARA VERIFICAR SI jsPDF ESTÁ DISPONIBLE ---
+    function checkJsPDFAvailability() {
+        // Diferentes formas en que jsPDF puede estar disponible
+        if (typeof window.jsPDF !== 'undefined') {
+            return window.jsPDF;
+        }
+        if (typeof jsPDF !== 'undefined') {
+            return jsPDF;
+        }
+        if (typeof window.jspdf !== 'undefined') {
+            return window.jspdf.jsPDF;
+        }
+        return null;
+    }
+
+    // --- PDF GENERATION (CORREGIDO) ---
     function generatePDF() {
         if (!lastBookingData) return;
 
-        const { jsPDF } = window.jsPDF;
-        const doc = new jsPDF();
+        // Verificar disponibilidad de jsPDF con múltiples métodos
+        const jsPDFConstructor = checkJsPDFAvailability();
         
-        const { userData, date, slots, services, eventId, createdAt } = lastBookingData;
-
-        // Colors (SpinBook theme)
-        const yellow = [250, 204, 21]; // #facc15
-        const black = [0, 0, 0];
-        const gray = [107, 114, 128]; // #6B7280
-
-        // Header background
-        doc.setFillColor(...yellow);
-        doc.rect(0, 0, 210, 45, 'F');
-
-        // Add logo/icon in top left corner
-        try {
-            // Create an image element to load the icon
-            const img = new Image();
-            img.onload = function() {
-                // Add the image to PDF once loaded
-                doc.addImage(img, 'PNG', 15, 8, 30, 30); // x, y, width, height
-                
-                // Continue with the rest of the PDF generation
-                completePDFGeneration();
-            };
-            img.onerror = function() {
-                // If image fails to load, continue without icon
-                console.warn('Could not load icon.png, continuing without logo');
-                completePDFGeneration();
-            };
-            img.src = STUDIO_CONFIG.logo;
-        } catch (error) {
-            console.warn('Error loading icon:', error);
-            completePDFGeneration();
+        if (!jsPDFConstructor) {
+            console.error('jsPDF library is not available');
+            displayMessage('Error: No se pudo cargar el generador de PDF. Por favor, recarga la página e inténtalo de nuevo.', 'error');
+            return;
         }
 
-        function completePDFGeneration() {
-            // Title (moved slightly to the right to accommodate logo)
-            doc.setTextColor(...black);
-            doc.setFontSize(30);
-            doc.setFont('helvetica', 'bold');
-            doc.text('SpinBook', 125, 25, { align: 'center' });
+        try {
+            // Usar el constructor encontrado
+            const doc = new jsPDFConstructor();
             
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Ticket de Reserva', 125, 35, { align: 'center' });
+            const { userData, date, slots, services, eventId, createdAt } = lastBookingData;
 
-            // Reset text color
-            doc.setTextColor(...black);
+            // Colors (SpinBook theme)
+            const yellow = [250, 204, 21]; // #facc15
+            const black = [0, 0, 0];
+            const gray = [107, 114, 128]; // #6B7280
 
-            // Confirmation title
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.text('CONFIRMACIÓN DE RESERVA', 105, 65, { align: 'center' });
+            // Header background
+            doc.setFillColor(...yellow);
+            doc.rect(0, 0, 210, 45, 'F');
 
-            // Booking details box
-            doc.setFillColor(248, 249, 250); // Light gray
-            doc.rect(15, 75, 180, 110, 'F'); // Aumentado el alto para incluir servicios
-            doc.setDrawColor(...gray);
-            doc.rect(15, 75, 180, 110, 'S');
-
-            // Details
-            const startY = 90;
-            const lineHeight = 12;
-            let currentY = startY;
-
-            // Usar la función que formatea correctamente la fecha
-            const formattedDate = formatDateCorrectly(date);
-
-            const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
-            
-            // NUEVO: Formatear servicios para PDF
-            const serviceNames = services.map(service => AVAILABLE_SERVICES[service]).join(', ');
-
-            const details = [
-                { label: 'Cliente:', value: userData.name },
-                { label: 'Email:', value: userData.email },
-                { label: 'Teléfono:', value: userData.phone },
-                { label: 'Fecha:', value: formattedDate },
-                { label: 'Horario:', value: timeSlots },
-                { label: 'Servicios:', value: serviceNames }, // NUEVO: Servicios en PDF
-                { label: 'Ubicación:', value: STUDIO_CONFIG.address }, 
-                { label: 'ID de Reserva:', value: eventId }
-            ];
-
-            // NUEVO: Agregar observaciones si existen
-            if (userData.observations && userData.observations.trim()) {
-                details.push({ label: 'Observaciones:', value: userData.observations });
+            // Add logo/icon in top left corner
+            try {
+                // Create an image element to load the icon
+                const img = new Image();
+                img.onload = function() {
+                    // Add the image to PDF once loaded
+                    doc.addImage(img, 'PNG', 15, 8, 30, 30); // x, y, width, height
+                    
+                    // Continue with the rest of the PDF generation
+                    completePDFGeneration();
+                };
+                img.onerror = function() {
+                    // If image fails to load, continue without icon
+                    console.warn('Could not load icon.png, continuing without logo');
+                    completePDFGeneration();
+                };
+                img.src = STUDIO_CONFIG.logo;
+            } catch (error) {
+                console.warn('Error loading icon:', error);
+                completePDFGeneration();
             }
 
-            doc.setFontSize(11);
-            details.forEach(detail => {
+            function completePDFGeneration() {
+                // Title (moved slightly to the right to accommodate logo)
+                doc.setTextColor(...black);
+                doc.setFontSize(30);
                 doc.setFont('helvetica', 'bold');
-                doc.text(detail.label, 20, currentY);
+                doc.text('SpinBook', 125, 25, { align: 'center' });
+                
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Ticket de Reserva', 125, 35, { align: 'center' });
+
+                // Reset text color
+                doc.setTextColor(...black);
+
+                // Confirmation title
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('CONFIRMACIÓN DE RESERVA', 105, 65, { align: 'center' });
+
+                // Booking details box
+                doc.setFillColor(248, 249, 250); // Light gray
+                doc.rect(15, 75, 180, 110, 'F'); // Aumentado el alto para incluir servicios
+                doc.setDrawColor(...gray);
+                doc.rect(15, 75, 180, 110, 'S');
+
+                // Details
+                const startY = 90;
+                const lineHeight = 12;
+                let currentY = startY;
+
+                // Usar la función que formatea correctamente la fecha
+                const formattedDate = formatDateCorrectly(date);
+
+                const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
+                
+                // NUEVO: Formatear servicios para PDF
+                const serviceNames = services.map(service => AVAILABLE_SERVICES[service]).join(', ');
+
+                const details = [
+                    { label: 'Cliente:', value: userData.name },
+                    { label: 'Email:', value: userData.email },
+                    { label: 'Teléfono:', value: userData.phone },
+                    { label: 'Fecha:', value: formattedDate },
+                    { label: 'Horario:', value: timeSlots },
+                    { label: 'Servicios:', value: serviceNames }, // NUEVO: Servicios en PDF
+                    { label: 'Ubicación:', value: STUDIO_CONFIG.address }, 
+                    { label: 'ID de Reserva:', value: eventId }
+                ];
+
+                // NUEVO: Agregar observaciones si existen
+                if (userData.observations && userData.observations.trim()) {
+                    details.push({ label: 'Observaciones:', value: userData.observations });
+                }
+
+                doc.setFontSize(11);
+                details.forEach(detail => {
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(detail.label, 20, currentY);
+                    doc.setFont('helvetica', 'normal');
+                    
+                    // Manejo de texto largo para campos que pueden ser extensos
+                    if ((detail.label === 'Ubicación:' || detail.label === 'Servicios:' || detail.label === 'Observaciones:') && detail.value.length > 40) {
+                        const lines = doc.splitTextToSize(detail.value, 120);
+                        doc.text(lines, 60, currentY);
+                        currentY += (lines.length - 1) * lineHeight; // Ajustar altura para múltiples líneas
+                    } else {
+                        doc.text(detail.value, 60, currentY);
+                    }
+                    
+                    currentY += lineHeight;
+                });
+
+                // Instructions (ajustado Y para dar espacio)
+                currentY += 20;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.text('INSTRUCCIONES IMPORTANTES:', 20, currentY);
+
+                currentY += 15;
                 doc.setFont('helvetica', 'normal');
-                
-                // Manejo de texto largo para campos que pueden ser extensos
-                if ((detail.label === 'Ubicación:' || detail.label === 'Servicios:' || detail.label === 'Observaciones:') && detail.value.length > 40) {
-                    const lines = doc.splitTextToSize(detail.value, 120);
-                    doc.text(lines, 60, currentY);
-                    currentY += (lines.length - 1) * lineHeight; // Ajustar altura para múltiples líneas
-                } else {
-                    doc.text(detail.value, 60, currentY);
-                }
-                
-                currentY += lineHeight;
-            });
+                doc.setFontSize(10);
 
-            // Instructions (ajustado Y para dar espacio)
-            currentY += 20;
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
-            doc.text('INSTRUCCIONES IMPORTANTES:', 20, currentY);
+                // Instrucciones actualizadas con dirección
+                const instructions = [
+                    '• Llega 10 minutos antes de tu sesión',
+                    '• Presenta este ticket al llegar al estudio',
+                    `• Dirígete a: ${STUDIO_CONFIG.address}`,
+                    '• Para cancelar, avisa con 24 horas de anticipación',
+                    ...(STUDIO_CONFIG.contact.phone ? [`• Contacto: ${STUDIO_CONFIG.contact.phone}`] : []),
+                    `• Email: ${STUDIO_CONFIG.contact.email}`
+                ];
 
-            currentY += 15;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(10);
-
-            // Instrucciones actualizadas con dirección
-            const instructions = [
-                '• Llega 10 minutos antes de tu sesión',
-                '• Presenta este ticket al llegar al estudio',
-                `• Dirígete a: ${STUDIO_CONFIG.address}`,
-                '• Para cancelar, avisa con 24 horas de anticipación',
-                ...(STUDIO_CONFIG.contact.phone ? [`• Contacto: ${STUDIO_CONFIG.contact.phone}`] : []),
-                `• Email: ${STUDIO_CONFIG.contact.email}`
-            ];
-
-            instructions.forEach(instruction => {
-                // Manejar líneas largas
-                if (instruction.length > 60) {
-                    const lines = doc.splitTextToSize(instruction, 170);
-                    lines.forEach(line => {
-                        doc.text(line, 20, currentY);
+                instructions.forEach(instruction => {
+                    // Manejar líneas largas
+                    if (instruction.length > 60) {
+                        const lines = doc.splitTextToSize(instruction, 170);
+                        lines.forEach(line => {
+                            doc.text(line, 20, currentY);
+                            currentY += 8;
+                        });
+                    } else {
+                        doc.text(instruction, 20, currentY);
                         currentY += 8;
-                    });
-                } else {
-                    doc.text(instruction, 20, currentY);
-                    currentY += 8;
-                }
-            });
+                    }
+                });
 
-            // Footer (ajustado Y)
-            doc.setFillColor(245, 245, 245);
-            doc.rect(0, 270, 210, 27, 'F'); // Ajustado Y y alto
-            doc.setTextColor(...gray);
-            doc.setFontSize(8);
-            doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, 280, { align: 'center' });
-            doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 290, { align: 'center' });
+                // Footer (ajustado Y)
+                doc.setFillColor(245, 245, 245);
+                doc.rect(0, 270, 210, 27, 'F'); // Ajustado Y y alto
+                doc.setTextColor(...gray);
+                doc.setFontSize(8);
+                doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, 280, { align: 'center' });
+                doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 290, { align: 'center' });
 
-            // Download PDF
-            // Usar el ID consistente en el nombre del archivo
-            const filename = `SpinBook-Reserva-${eventId}.pdf`;
-            doc.save(filename);
-            
-            // Cerrar modal y refrescar después de descargar
-            hideSuccessModal();
+                // Download PDF
+                // Usar el ID consistente en el nombre del archivo
+                const filename = `SpinBook-Reserva-${eventId}.pdf`;
+                doc.save(filename);
+                
+                // Cerrar modal y refrescar después de descargar
+                hideSuccessModal();
+            }
+
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            displayMessage('Error al generar el PDF. Por favor, inténtalo de nuevo.', 'error');
         }
     }
 
@@ -815,5 +845,13 @@ document.addEventListener('DOMContentLoaded', function() {
             studioAddress: STUDIO_CONFIG.address
         });
         console.log('🎯 New features initialized: Services selection & Observations toggle');
+        
+        // Verificar disponibilidad de jsPDF al inicializar
+        const jsPDFConstructor = checkJsPDFAvailability();
+        if (jsPDFConstructor) {
+            console.log('✅ jsPDF library loaded successfully');
+        } else {
+            console.warn('⚠️ jsPDF library not found - PDF generation may not work');
+        }
     });
 });
