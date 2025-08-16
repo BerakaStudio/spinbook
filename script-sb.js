@@ -584,18 +584,46 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof jsPDF !== 'undefined') {
             return jsPDF;
         }
-        if (typeof window.jspdf !== 'undefined') {
+        if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
             return window.jspdf.jsPDF;
+        }
+        // Para la versión UMD
+        if (typeof window.jspdf !== 'undefined') {
+            return window.jspdf;
         }
         return null;
     }
 
+    // --- FUNCIÓN ALTERNATIVA PARA CARGAR jsPDF DINÁMICAMENTE ---
+    function loadJsPDFDynamically() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js';
+            script.onload = () => {
+                console.log('jsPDF loaded dynamically');
+                resolve(checkJsPDFAvailability());
+            };
+            script.onerror = () => reject(new Error('Failed to load jsPDF'));
+            document.head.appendChild(script);
+        });
+    }
+
     // --- PDF GENERATION (CORREGIDO) ---
-    function generatePDF() {
+    async function generatePDF() {
         if (!lastBookingData) return;
 
         // Verificar disponibilidad de jsPDF con múltiples métodos
-        const jsPDFConstructor = checkJsPDFAvailability();
+        let jsPDFConstructor = checkJsPDFAvailability();
+        
+        // Si no está disponible, intentar cargar dinámicamente
+        if (!jsPDFConstructor) {
+            try {
+                displayMessage('Cargando generador de PDF...', 'info');
+                jsPDFConstructor = await loadJsPDFDynamically();
+            } catch (error) {
+                console.error('Failed to load jsPDF dynamically:', error);
+            }
+        }
         
         if (!jsPDFConstructor) {
             console.error('jsPDF library is not available');
@@ -604,6 +632,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
+            // Limpiar mensaje de carga
+            messageArea.innerHTML = '';
+            
             // Usar el constructor encontrado
             const doc = new jsPDFConstructor();
             
