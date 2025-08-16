@@ -26,7 +26,7 @@
     "pdf-generation"
   ],
   "author": {
-    "name": "SpinBook 1.0.1 - Beraka Studio",
+    "name": "SpinBook 1.0.2 - Beraka Studio",
     "email": "hola@beraka.cl",
     "url": "https://github.com/berakastudio/spinbook"
   },
@@ -62,7 +62,7 @@
   ],
   "files": [
     "index.html",
-    "script-sb.js",
+    "src/",
     "api/",
     "README.md",
     "package.json"

@@ -85,7 +85,7 @@ export function getGoogleCalendar() {
         
     } catch (authError) {
         console.error('❌ Authentication failed:', authError.message);
-        console.error('🐛 Error details:', {
+        console.error('🛠 Error details:', {
             name: authError.name,
             message: authError.message,
             stack: authError.stack?.substring(0, 500) + '...'
@@ -171,7 +171,7 @@ export function getStudioTimezone() {
         
     } catch (timezoneError) {
         console.error('❌ Invalid timezone:', timeZone);
-        console.error('🐛 Timezone error:', timezoneError.message);
+        console.error('🛠 Timezone error:', timezoneError.message);
         console.error('💡 Common timezone examples:');
         console.error('  - America/New_York (US Eastern)');
         console.error('  - America/Los_Angeles (US Pacific)');
