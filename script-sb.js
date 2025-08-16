@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- SERVICIOS DISPONIBLES ---
     const AVAILABLE_SERVICES = {
         'produccion': 'Producción Musical',
-        'grabacion': 'Grabación de Voces/Instrumentos',
-        'mixmastering': 'Mix/Mastering'
+        'grabacion': 'Grabación',
+        'mixmastering': 'Mix y Mastering'
     };
 
     // --- FUNCIÓN PARA OBTENER VERSIÓN DESDE PACKAGE.JSON ---
@@ -31,10 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/package.json');
             const packageData = await response.json();
-            return packageData.version || '1.0.1';
+            return packageData.version || '1.0.2';
         } catch (error) {
             console.warn('Could not fetch version from package.json:', error);
-            return '1.0.1'; // Fallback version
+            return '1.0.2'; // Fallback version
         }
     }
 
@@ -607,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- PDF GENERATION (OPTIMIZED VERSION) ---
+    // --- PDF GENERATION ---
     async function generatePDF() {
         if (!lastBookingData) return;
 
@@ -673,11 +673,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 doc.setTextColor(...black);
                 doc.setFontSize(26); // Reducido de 30 a 26
                 doc.setFont('helvetica', 'bold');
-                doc.text('SpinBook', 125, 20, { align: 'center' }); // Ajustado Y
+                doc.text('SpinBook', 110, 20, { align: 'center' }); // Ajustado Y de 125 a 110
                 
                 doc.setFontSize(12); // Reducido de 14 a 12
                 doc.setFont('helvetica', 'bold');
-                doc.text('Ticket de Reserva', 125, 30, { align: 'center' }); // Ajustado Y
+                doc.text('Ticket de Reserva', 110, 30, { align: 'center' }); // Ajustado Y
 
                 doc.setTextColor(...black);
 
