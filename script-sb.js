@@ -31,10 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/package.json');
             const packageData = await response.json();
-            return packageData.version || '1.0.2';
+            return packageData.version || '1.0.1';
         } catch (error) {
             console.warn('Could not fetch version from package.json:', error);
-            return '1.0.2'; // Fallback version
+            return '1.0.1'; // Fallback version
         }
     }
 
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeSlotsEl = document.getElementById('time-slots');
     const slotsLoaderEl = document.getElementById('slots-loader');
     
-    // NUEVO: Elementos de servicios
+    // Elementos de servicios
     const servicesContainer = document.getElementById('services-container');
     const serviceCards = document.querySelectorAll('.service-card');
     const serviceCheckboxes = document.querySelectorAll('.service-checkbox');
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageArea = document.getElementById('message-area');
     const submitButton = document.getElementById('submit-booking');
 
-    // NUEVO: Elementos de observaciones
+    // Elementos de observaciones
     const toggleObservations = document.getElementById('toggle-observations');
     const observationsField = document.getElementById('observations-field');
     const observationsTextarea = document.getElementById('observations');
@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const bookingData = {
             date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`,
             slots: selectedSlots,
-            services: selectedServices, // NUEVO: Incluir servicios seleccionados
+            services: selectedServices, // Incluir servicios seleccionados
             userData: { 
                 name, 
                 email, 
@@ -531,11 +531,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('modal-time').textContent = slots.map(h => `${h}:00-${h+1}:00`).join(', ');
         
-        // NUEVO: Mostrar servicios seleccionados
+        // Mostrar servicios seleccionados
         const serviceNames = services.map(service => AVAILABLE_SERVICES[service]).join(', ');
         document.getElementById('modal-services').textContent = serviceNames;
         
-        // NUEVO: Mostrar observaciones si existen
+        // Mostrar observaciones si existen
         const observationsContainer = document.getElementById('modal-observations-container');
         const observationsEl = document.getElementById('modal-observations');
         if (userData.observations && userData.observations.trim()) {
@@ -608,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- PDF GENERATION (CORREGIDO) ---
+    // --- PDF GENERATION ---
     async function generatePDF() {
         if (!lastBookingData) return;
 
@@ -690,11 +690,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 doc.setFont('helvetica', 'bold');
                 doc.text('CONFIRMACIÓN DE RESERVA', 105, 65, { align: 'center' });
 
-                // Booking details box
+                // Calculate box height dynamically based on content
+                let baseHeight = 110;
+                // Add extra height if observations exist
+                if (userData.observations && userData.observations.trim()) {
+                    const observationsLines = Math.ceil(userData.observations.length / 50); // Estimate lines needed
+                    baseHeight += observationsLines * 12; // Add height for observations
+                }
+
+                // Booking details box with dynamic height
                 doc.setFillColor(248, 249, 250); // Light gray
-                doc.rect(15, 75, 180, 110, 'F'); // Aumentado el alto para incluir servicios
+                doc.rect(15, 75, 180, baseHeight, 'F');
                 doc.setDrawColor(...gray);
-                doc.rect(15, 75, 180, 110, 'S');
+                doc.rect(15, 75, 180, baseHeight, 'S');
 
                 // Details
                 const startY = 90;
@@ -706,7 +714,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const timeSlots = slots.map(hour => `${hour}:00-${hour+1}:00`).join(', ');
                 
-                // NUEVO: Formatear servicios para PDF
+                // Formatear servicios para PDF
                 const serviceNames = services.map(service => AVAILABLE_SERVICES[service]).join(', ');
 
                 const details = [
@@ -743,8 +751,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentY += lineHeight;
                 });
 
-                // Instructions (ajustado Y para dar espacio)
+                // Instructions (ajustado Y para dar espacio dinámicamente)
                 currentY += 20;
+                
+                // Ensure instructions start below the box
+                const minInstructionsY = 75 + baseHeight + 25; // Box start + box height + margin
+                if (currentY < minInstructionsY) {
+                    currentY = minInstructionsY;
+                }
+                
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(12);
                 doc.text('INSTRUCCIONES IMPORTANTES:', 20, currentY);
@@ -777,13 +792,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
 
-                // Footer (ajustado Y)
+                // Footer (ajustado Y dinámicamente)
+                // Calculate footer position based on content
+                let footerY = Math.max(270, currentY + 20); // Minimum 270 or 20px below last instruction
+                
                 doc.setFillColor(245, 245, 245);
-                doc.rect(0, 270, 210, 27, 'F'); // Ajustado Y y alto
+                doc.rect(0, footerY, 210, 27, 'F');
                 doc.setTextColor(...gray);
                 doc.setFontSize(8);
-                doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, 280, { align: 'center' });
-                doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, 290, { align: 'center' });
+                doc.text('Generado: ' + createdAt.toLocaleString('es-ES'), 105, footerY + 10, { align: 'center' });
+                doc.text(`${STUDIO_CONFIG.name} © 2025 - Sistema de Reservas Musicales`, 105, footerY + 20, { align: 'center' });
 
                 // Download PDF
                 // Usar el ID consistente en el nombre del archivo
@@ -864,7 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCalendar();
         renderTimeSlots();
         
-        // NUEVO: Inicializar lógica de servicios y observaciones
+        // Inicializar lógica de servicios y observaciones
         initializeServiceSelection();
         initializeObservationsToggle();
         
