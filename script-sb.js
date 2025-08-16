@@ -673,11 +673,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 doc.setTextColor(...black);
                 doc.setFontSize(26); // Reducido de 30 a 26
                 doc.setFont('helvetica', 'bold');
-                doc.text('SpinBook', 110, 20, { align: 'center' }); // Ajustado Y de 125 a 110
+                doc.text('SpinBook', 105, 20, { align: 'center' }); // Ajustado Y de 125 a 105
                 
                 doc.setFontSize(12); // Reducido de 14 a 12
                 doc.setFont('helvetica', 'bold');
-                doc.text('Ticket de Reserva', 110, 30, { align: 'center' }); // Ajustado Y
+                doc.text('Ticket de Reserva', 105, 30, { align: 'center' }); // Ajustado Y
 
                 doc.setTextColor(...black);
 

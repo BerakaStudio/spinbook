@@ -310,7 +310,7 @@ export default async function handler(request, response) {
         
         // NUEVO: Descripción detallada para el calendario incluyendo servicios y observaciones
         let detailedDescription = `
-🎵 RESERVA SPINBOOK - ESTUDIO DE GRABACIÓN 🎵
+🎵 RESERVA DE ESTUDIO - SPINBOOK 🎵
 
 📋 DETALLES DE LA RESERVA:
 ────────────────────────────────────────────────────────────────────────────────
@@ -344,7 +344,7 @@ ${new Date().toLocaleString('es-ES')}
         `;
 
         const event = {
-            summary: `🎵 ${userData.name} - Sesión de Grabación`,
+            summary: `🎵 ${userData.name} - Reserva de Estudio`,
             description: detailedDescription.trim(),
             start: {
                 dateTime: startDateTime,
@@ -361,8 +361,8 @@ ${new Date().toLocaleString('es-ES')}
                     spinbook_client_phone: userData.phone,
                     spinbook_booking_id: bookingId,
                     spinbook_slots: JSON.stringify(sortedSlots),
-                    spinbook_services: JSON.stringify(validServices), // NUEVO: Almacenar servicios
-                    spinbook_observations: userData.observations || '', // NUEVO: Almacenar observaciones
+                    spinbook_services: JSON.stringify(validServices),
+                    spinbook_observations: userData.observations || '',
                     spinbook_studio_address: STUDIO_CONFIG.address,
                     spinbook_created_at: new Date().toISOString()
                 }
