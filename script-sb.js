@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- SERVICIOS DISPONIBLES ---
     const AVAILABLE_SERVICES = {
         'produccion': 'Producción Musical',
-        'grabacion': 'Grabación',
-        'mixmastering': 'Mix y Mastering'
+        'grabacion': 'Grabación de Voces/Instrumentos',
+        'mixmastering': 'Mix/Mastering'
     };
 
     // --- FUNCIÓN PARA OBTENER VERSIÓN DESDE PACKAGE.JSON ---
@@ -65,8 +65,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentDate = new Date();
     let selectedDate = null;
     let selectedSlots = [];
-    let selectedServices = []; // Array de servicios seleccionados
-    let showObservations = false; // Toggle para observaciones
+    let selectedServices = []; // NUEVO: Array de servicios seleccionados
+    let showObservations = false; // NUEVO: Toggle para observaciones
     let lastBookingData = null; // Para el PDF
     let currentBusySlots = []; // Cache de slots ocupados para la fecha actual
 
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function selectDate(date) {
         selectedDate = date;
         selectedSlots = [];
-        selectedServices = [];
+        selectedServices = []; // Reset servicios
         renderCalendar();
         
         // Ocultar pasos posteriores
@@ -377,11 +377,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- NUEVA LÓGICA DE OBSERVACIONES ---
     function initializeObservationsToggle() {
-        const toggleSwitch = toggleObservations.parentElement.querySelector('.toggle-switch');
+        const toggleContainer = document.getElementById('observations-toggle-container');
+        const toggleSwitch = toggleContainer.querySelector('.toggle-switch');
         const toggleDot = toggleSwitch.querySelector('.toggle-dot');
 
-        toggleObservations.addEventListener('change', () => {
-            showObservations = toggleObservations.checked;
+        // Función para alternar el estado
+        function toggleObservationsState() {
+            showObservations = !showObservations;
+            toggleObservations.checked = showObservations;
             
             if (showObservations) {
                 // Mostrar campo de observaciones
@@ -414,12 +417,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Limpiar textarea
                 observationsTextarea.value = '';
             }
+        }
+
+        // Event listener para el contenedor completo (incluye tanto el switch como el texto)
+        toggleContainer.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleObservationsState();
         });
 
-        // Click en el toggle switch también
-        toggleSwitch.addEventListener('click', () => {
-            toggleObservations.checked = !toggleObservations.checked;
-            toggleObservations.dispatchEvent(new Event('change'));
+        // Event listener específico para el checkbox (por si se accede programáticamente)
+        toggleObservations.addEventListener('change', (e) => {
+            // Solo actuar si el cambio no vino del click del contenedor
+            if (e.isTrusted && showObservations !== e.target.checked) {
+                toggleObservationsState();
+            }
         });
     }
     
@@ -471,12 +482,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             // Store booking data for PDF generation
+            // Almacenar la fecha correctamente sin problemas de timezone
             lastBookingData = {
                 userData: bookingData.userData,
                 date: bookingData.date, // Mantenemos el formato YYYY-MM-DD
                 selectedDateObject: selectedDate, // Agregamos el objeto Date original para referencia
                 slots: selectedSlots,
-                services: selectedServices, // NUEVO: Almacenar servicios para PDF
+                services: selectedServices, // Almacenar servicios para PDF
                 eventId: result.event.id, // Usar el ID consistente del backend
                 createdAt: new Date()
             };
@@ -648,8 +660,9 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.setFillColor(...yellow);
             doc.rect(0, 0, 210, 35, 'F');
 
-            // Add logo/icon in top left corner
+            // Add logo/icon in top left corner (ajustado para header más pequeño)
             try {
+                // Create an image element to load the icon
                 const img = new Image();
                 img.onload = function() {
                     // Add the image to PDF once loaded (reducido tamaño: 25x25)
@@ -670,15 +683,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             function completePDFGeneration() {
+                // Title (ajustado para header más pequeño)
                 doc.setTextColor(...black);
                 doc.setFontSize(26); // Reducido de 30 a 26
                 doc.setFont('helvetica', 'bold');
-                doc.text('SpinBook', 105, 20, { align: 'center' }); // Ajustado Y de 125 a 105
+                doc.text('SpinBook', 105, 20, { align: 'center' }); // Ajustado Y
                 
                 doc.setFontSize(12); // Reducido de 14 a 12
                 doc.setFont('helvetica', 'bold');
                 doc.text('Ticket de Reserva', 105, 30, { align: 'center' }); // Ajustado Y
 
+                // Reset text color
                 doc.setTextColor(...black);
 
                 // Confirmation title (más cerca del header)
@@ -690,17 +705,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 let baseHeight = 85; // Reducido de 110 a 85
                 // Add extra height if observations exist
                 if (userData.observations && userData.observations.trim()) {
-                    const observationsLines = Math.ceil(userData.observations.length / 60);
-                    baseHeight += observationsLines * 8;
+                    const observationsLines = Math.ceil(userData.observations.length / 60); // Más caracteres por línea
+                    baseHeight += observationsLines * 8; // Reducido espacio por línea de observaciones
                 }
 
-                // Booking details box with dynamic height
-                doc.setFillColor(248, 249, 250);
+                // Booking details box with dynamic height (posición más alta)
+                doc.setFillColor(248, 249, 250); // Light gray
                 doc.rect(15, 58, 180, baseHeight, 'F'); // Y reducido de 75 a 58
                 doc.setDrawColor(...gray);
                 doc.rect(15, 58, 180, baseHeight, 'S');
 
-                // Details (interlineado)
+                // Details (interlineado más compacto)
                 const startY = 70; // Reducido de 90 a 70
                 const lineHeight = 8; // Reducido de 12 a 8
                 let currentY = startY;
@@ -719,11 +734,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     { label: 'Teléfono:', value: userData.phone },
                     { label: 'Fecha:', value: formattedDate },
                     { label: 'Horario:', value: timeSlots },
-                    { label: 'Servicios:', value: serviceNames },
+                    { label: 'Servicios:', value: serviceNames }, // NUEVO: Servicios en PDF
                     { label: 'Ubicación:', value: STUDIO_CONFIG.address }, 
                     { label: 'ID de Reserva:', value: eventId }
                 ];
 
+                // NUEVO: Agregar observaciones si existen
                 if (userData.observations && userData.observations.trim()) {
                     details.push({ label: 'Observaciones:', value: userData.observations });
                 }
@@ -746,7 +762,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentY += lineHeight;
                 });
 
-                currentY += 12; // tamaño de 20 a 12
+                // Instructions (más cerca del contenido anterior)
+                currentY += 12; // Reducido de 20 a 12
                 
                 // Ensure instructions start below the box but más compacto
                 const minInstructionsY = 58 + baseHeight + 15; // Reducido margin de 25 a 15
@@ -786,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
 
-                // Footer fijo en la parte inferior
+                // Footer fijo en la parte inferior (compacto, una línea)
                 const footerY = 277; // Posición fija cerca del final de la página
                 
                 doc.setFillColor(245, 245, 245);
