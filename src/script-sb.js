@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/package.json');
             const packageData = await response.json();
-            return packageData.version || '1.0.2';
+            return packageData.version || '1.0.3';
         } catch (error) {
             console.warn('Could not fetch version from package.json:', error);
             return '1.0.2'; // Fallback version

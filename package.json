@@ -1,6 +1,6 @@
 {
   "name": "spinbook",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "SpinBook: Sistema profesional de reservas para estudios de grabación musical con Google Calendar API y Telegram.",
   "main": "index.html",
   "type": "module",
@@ -26,7 +26,7 @@
     "pdf-generation"
   ],
   "author": {
-    "name": "SpinBook 1.0.2 - Beraka Studio",
+    "name": "SpinBook - Beraka Studio",
     "email": "hola@beraka.cl",
     "url": "https://github.com/berakastudio/spinbook"
   },
