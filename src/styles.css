@@ -39,6 +39,93 @@ a {
   text-align: left;
   justify-content: center;
 }
+
+/* INICIO DE CÓDIGO AÑADIDO */
+.toggle-switch {
+  width: 3rem;
+  height: 1.5rem;
+  background-color: #374151; /* dark gray */
+  border-radius: 9999px;
+  transition: all 0.3s ease-in-out;
+}
+
+.toggle-dot {
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: #f3f4f6; /* light gray */
+  border-radius: 9999px;
+  top: 0.125rem;
+  left: 0.125rem;
+  transition: all 0.3s ease-in-out;
+}
+
+input:checked + .toggle-dot {
+  transform: translateX(1.5rem);
+  background-color: #facc15; /* yellow */
+}
+
+/* Reglas de estilo para el modo claro */
+body.light-mode {
+    background-color: #f3f4f6; /* light gray */
+    color: #1f2937; /* dark gray */
+}
+
+.light-mode .bg-black {
+    background-color: #f3f4f6;
+}
+
+.light-mode .text-white {
+    color: #1f2937;
+}
+
+.light-mode .bg-gray-900\/50 {
+    background-color: rgba(255, 255, 255, 0.5); /* white semi-transparent */
+}
+
+.light-mode .text-yellow-400,
+.light-mode .text-yellow-500 {
+    color: #9d5026; /* new brand color */
+}
+
+.light-mode .bg-yellow-500 {
+    background-color: #9d5026;
+    color: #f3f4f6;
+}
+
+.light-mode .bg-yellow-500:hover {
+    background-color: #7b411f;
+}
+
+.light-mode .bg-gray-900 {
+    background-color: #ffffff;
+}
+
+.light-mode .border-gray-700 {
+    border-color: #d1d5db;
+}
+
+.light-mode .bg-gray-800 {
+    background-color: #f9fafb;
+}
+
+.light-mode .text-gray-400 {
+    color: #6b7280;
+}
+
+.light-mode .text-gray-500 {
+    color: #6b7280;
+}
+
+.light-mode .bg-gray-700 {
+    background-color: #e5e7eb;
+}
+
+.light-mode .bg-gray-600 {
+    background-color: #d1d5db;
+}
+
+/* FIN DE CÓDIGO AÑADIDO */
+
 .calendar-day:not(.disabled):hover {
   background-color: #fbbf24; /* amber-300 */
   color: #1f2937; /* gray-800 */

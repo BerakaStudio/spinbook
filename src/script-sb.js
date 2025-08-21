@@ -886,6 +886,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // INICIO DEL CÓDIGO AÑADIDO
+    const toggleSwitch = document.getElementById('darkModeToggle');
+    const body = document.body;
+
+    // Función para aplicar el tema
+    function applyTheme(isLightMode) {
+        if (isLightMode) {
+            body.classList.add('light-mode');
+            toggleSwitch.checked = true;
+        } else {
+            body.classList.remove('light-mode');
+            toggleSwitch.checked = false;
+        }
+    }
+
+    // Verificar y aplicar el tema guardado en localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        applyTheme(true);
+    } else {
+        applyTheme(false); // Por defecto, es modo oscuro
+    }
+
+    // Escuchar cambios en el toggle
+    toggleSwitch.addEventListener('change', () => {
+        if (toggleSwitch.checked) {
+            applyTheme(true);
+            localStorage.setItem('theme', 'light');
+        } else {
+            applyTheme(false);
+            localStorage.setItem('theme', 'dark');
+        }
+    });
+    // FIN DEL CÓDIGO AÑADIDO
+
     // --- INITIALIZATION ---
     // Inicializar elementos dinámicos primero
     initializeDynamicElements().then(() => {
