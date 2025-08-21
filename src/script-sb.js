@@ -4,7 +4,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // --- CONFIGURACIÓN DEL ESTUDIO (Variable modificable) ---
     const STUDIO_CONFIG = {
-        name: 'Nombre Estudio - SpinBook', //AGREGA NOMBRE DEL ESTUDIO/PRODUCTOR ANTES DEL GUION
+        name: 'Nombre Estudio', //AGREGA NOMBRE DEL ESTUDIO/PRODUCTOR ANTES DEL GUION
         logo: 'src/icon.png', // AGREGA LA RUTA DEL LOGO/ICONO DEL ESTUDIO
         address: 'Dirección Estudio', // AGREGA LA DIRECCIÓN DEL ESTUDIO/PRODUCTOR
         contact: {

@@ -46,11 +46,11 @@ body.light-mode {
   --text-primary: #1e293b;
   --text-secondary: #475569;
   --text-muted: #64748b;
-  --text-accent: #b45309; /* Nuevo color principal para modo claro */
+  --text-accent: #af8a10; /* Nuevo color principal para modo claro */
   
   --border-primary: #e2e8f0;
   --border-secondary: #cbd5e1;
-  --border-accent: #b45309;
+  --border-accent: #af8a10;
   
   --accent-primary: #b45309;
   --accent-hover: #92400e;
