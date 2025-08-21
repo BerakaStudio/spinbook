@@ -84,118 +84,13 @@ h1, h2, h3, h4, h5, h6, p, span, a {
   flex: 1;
 }
 
-/* ===== VARIABLES DE COLORES MEJORADAS ===== */
-:root {
-  /* Modo Oscuro (por defecto) - MEJORADO */
-  --bg-primary: #000000;
-  --bg-secondary: #111827;
-  --bg-card: rgba(31, 41, 55, 0.5);
-  --bg-card-solid: #1f2937;
-  --bg-input: #374151;
-  --bg-hover: #4b5563;
-  
-  --text-primary: #ffffff;
-  --text-secondary: #d1d5db;
-  --text-muted: #9ca3af;
-  --text-accent: #facc15;
-  
-  --border-primary: #374151;
-  --border-secondary: #4b5563;
-  --border-accent: #facc15;
-  
-  --accent-primary: #facc15;
-  --accent-hover: #fbbf24;
-  --accent-text: #000000;
-  
-  /* Colores de estado */
-  --success-bg: #065f46;
-  --success-text: #6ee7b7;
-  --error-bg: #7f1d1d;
-  --error-text: #fca5a5;
-  --info-bg: #1e3a8a;
-  --info-text: #93c5fd;
-  
-  /* NUEVO: Sombras y efectos */
-  --shadow-light: rgba(0, 0, 0, 0.1);
-  --shadow-medium: rgba(0, 0, 0, 0.25);
-  --shadow-heavy: rgba(0, 0, 0, 0.5);
-  --glow-accent: rgba(250, 204, 21, 0.3);
-  
-  /* NUEVO: Gradientes */
-  --gradient-primary: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%);
-  --gradient-accent: linear-gradient(135deg, #facc15 0%, #fbbf24 100%);
-}
-
-/* ===== MODO CLARO MEJORADO ===== */
-body.light-mode {
-  /* Colores base mejorados */
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.9); /* Mejorado: más opaco */
-  --bg-card-solid: #ffffff;
-  --bg-input: #f1f5f9;
-  --bg-hover: #e2e8f0;
-  
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --text-accent: #b45309; /* Naranja cálido para mejor contraste */
-  
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
-  --border-accent: #b45309;
-  
-  --accent-primary: #b45309;
-  --accent-hover: #92400e;
-  --accent-text: #ffffff;
-  
-  /* Colores de estado para modo claro */
-  --success-bg: #dcfce7;
-  --success-text: #166534;
-  --error-bg: #fef2f2;
-  --error-text: #dc2626;
-  --info-bg: #dbeafe;
-  --info-text: #1d4ed8;
-  
-  /* NUEVO: Sombras y efectos para modo claro */
-  --shadow-light: rgba(0, 0, 0, 0.05);
-  --shadow-medium: rgba(0, 0, 0, 0.1);
-  --shadow-heavy: rgba(0, 0, 0, 0.15);
-  --glow-accent: rgba(180, 83, 9, 0.2);
-  
-  /* NUEVO: Gradientes para modo claro */
-  --gradient-primary: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%);
-  --gradient-accent: linear-gradient(135deg, #b45309 0%, #92400e 100%);
-}
-
-/* ===== TRANSICIONES SUAVES MEJORADAS ===== */
-body {
-  font-family: "Inter", sans-serif;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  /* MEJORADO: Transición más suave */
-  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-              color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* NUEVO: Aplicar transiciones suaves a todos los elementos principales */
-h1, h2, h3, h4, h5, h6, p, span, a, div, input, textarea, button, select {
-  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ===== TOP BAR MEJORADO ===== */
+/* ===== TOP BAR NAVIGATION ===== */
 .top-bar {
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card-solid) 50%, var(--bg-secondary) 100%);
   border-bottom: 2px solid var(--border-primary);
-  box-shadow: 0 4px 20px var(--shadow-light);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   position: relative;
   backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
 }
 
 .top-bar::after {
@@ -208,232 +103,91 @@ h1, h2, h3, h4, h5, h6, p, span, a, div, input, textarea, button, select {
   background: linear-gradient(90deg, transparent 0%, var(--accent-primary) 50%, transparent 100%);
 }
 
-/* ===== THEME TOGGLE MEJORADO ===== */
+/* Theme Toggle Switch Optimizado */
 .theme-toggle-switch {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   position: relative;
 }
 
 .theme-toggle-slider {
   background-color: var(--border-secondary);
-  box-shadow: inset 0 2px 4px var(--shadow-light);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-}
-
-/* MEJORADO: Estado hover más visible */
-.theme-toggle-switch:hover .theme-toggle-slider {
-  background-color: var(--bg-hover);
-  box-shadow: inset 0 2px 4px var(--shadow-medium);
-  transform: scale(1.05);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
 .theme-toggle-dot {
   background-color: var(--text-primary);
-  box-shadow: 0 2px 4px var(--shadow-medium);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
 }
 
-/* Estado activo del toggle MEJORADO */
+/* Estado activo del toggle */
 #darkModeToggle:checked + .theme-toggle-slider {
   background-color: var(--accent-primary) !important;
-  box-shadow: 0 0 10px var(--glow-accent), inset 0 1px 3px rgba(0, 0, 0, 0.2);
-  border-color: var(--accent-hover);
+  box-shadow: 0 0 10px rgba(180, 83, 9, 0.4);
 }
 
 #darkModeToggle:checked + .theme-toggle-slider .theme-toggle-dot {
   transform: translateX(1.5rem);
   background-color: var(--accent-text);
-  box-shadow: 0 2px 8px var(--shadow-heavy);
 }
 
-/* NUEVO: Estado de focus mejorado para accesibilidad */
-.theme-toggle-switch:focus-within .theme-toggle-slider {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
-}
-
-/* Iconos del tema MEJORADOS */
+/* Iconos del tema */
 .theme-icon {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   color: var(--text-muted);
 }
 
 .light-mode .sun-icon,
 body:not(.light-mode) .moon-icon {
   color: var(--accent-primary);
-  transform: scale(1.1);
-  filter: drop-shadow(0 0 4px var(--glow-accent));
 }
 
-/* NUEVO: Animación suave para cambio de iconos */
-@keyframes iconGlow {
-  0%, 100% { filter: drop-shadow(0 0 4px var(--glow-accent)); }
-  50% { filter: drop-shadow(0 0 8px var(--glow-accent)); }
+/* ===== LOGOTITLE ===== */
+.logotitle {
+  display: flex;
+  width: 100%;
+  justify-content: center;
 }
 
-.light-mode .sun-icon,
-body:not(.light-mode) .moon-icon {
-  animation: iconGlow 2s ease-in-out infinite;
+.logotitle img.logo {
+  max-width: 12%;
+  height: fit-content;
 }
 
-/* ===== MEJORAS PARA COMPONENTES PRINCIPALES ===== */
-
-/* Main container mejorado */
-main {
-  background: var(--bg-card) !important;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px var(--shadow-light);
-  border: 1px solid var(--border-primary);
+.logotitle .title {
+  display: flex;
+  flex-flow: column;
+  margin-left: 2rem;
+  text-align: left;
+  justify-content: center;
 }
 
-/* NUEVO: Mejor soporte para cards de servicios en modo claro */
-.service-card {
-  background-color: var(--bg-input) !important;
-  border-color: var(--border-secondary) !important;
-  box-shadow: 0 2px 8px var(--shadow-light);
+/* ===== APLICACIÓN DE VARIABLES CSS ===== */
+.bg-black { background-color: var(--bg-primary) !important; }
+.bg-gray-900 { background-color: var(--bg-card-solid) !important; }
+.bg-gray-900\/50 { background-color: var(--bg-card) !important; }
+.bg-gray-800 { background-color: var(--bg-input) !important; }
+.bg-gray-700 { background-color: var(--bg-hover) !important; }
+.bg-gray-600 { background-color: var(--border-secondary) !important; }
+
+.text-white { color: var(--text-primary) !important; }
+.text-gray-300 { color: var(--text-secondary) !important; }
+.text-gray-400 { color: var(--text-muted) !important; }
+.text-gray-500 { color: var(--text-muted) !important; }
+.text-yellow-400 { color: var(--text-accent) !important; }
+.text-yellow-500 { color: var(--text-accent) !important; }
+
+.border-gray-600 { border-color: var(--border-secondary) !important; }
+.border-gray-700 { border-color: var(--border-primary) !important; }
+.border-yellow-400 { border-color: var(--border-accent) !important; }
+
+.bg-yellow-500 { 
+  background-color: var(--accent-primary) !important;
+  color: var(--accent-text) !important;
 }
-
-.service-card:hover {
-  box-shadow: 0 8px 25px var(--glow-accent);
-  border-color: var(--border-accent) !important;
-}
-
-.service-card.border-yellow-400 {
-  box-shadow: 0 0 20px var(--glow-accent);
-  background: linear-gradient(135deg, var(--accent-primary)0d 0%, var(--accent-primary)1a 100%) !important;
-  border-color: var(--border-accent) !important;
-}
-
-/* NUEVO: Mejor soporte para inputs en modo claro */
-input, textarea, select {
-  background-color: var(--bg-input) !important;
-  border-color: var(--border-secondary) !important;
-  color: var(--text-primary) !important;
-}
-
-input:focus, textarea:focus, select:focus {
-  border-color: var(--accent-primary) !important;
-  box-shadow: 0 0 0 3px var(--glow-accent) !important;
-}
-
-/* NUEVO: Placeholders mejorados */
-input::placeholder, textarea::placeholder {
-  color: var(--text-muted) !important;
-}
-
-/* ===== FOOTER MEJORADO ===== */
-footer {
-  background: var(--gradient-primary);
-  border-top: 2px solid var(--border-primary);
-  box-shadow: 0 -4px 20px var(--shadow-medium);
-  position: relative;
-  margin-top: auto;
-}
-
-footer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--accent-primary) 50%, transparent 100%);
-}
-
-/* NUEVO: Mensaje de estado mejorados */
-#message-area p {
-  transition: all 0.3s ease;
-}
-
-.bg-green-900 { background-color: var(--success-bg) !important; }
-.text-green-300 { color: var(--success-text) !important; }
-.bg-red-900 { background-color: var(--error-bg) !important; }
-.text-red-300 { color: var(--error-text) !important; }
-.bg-blue-900 { background-color: var(--info-bg) !important; }
-.text-blue-300 { color: var(--info-text) !important; }
-
-/* ===== MEJORAS DE ACCESIBILIDAD ===== */
-
-/* NUEVO: Mejor soporte para usuarios con motion reducido */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  
-  .theme-icon {
-    animation: none !important;
-  }
-}
-
-/* NUEVO: Mejor contraste para modo de alto contraste */
-@media (prefers-contrast: high) {
-  :root {
-    --border-primary: #000000;
-    --border-secondary: #000000;
-    --text-muted: #000000;
-  }
-  
-  body.light-mode {
-    --border-primary: #ffffff;
-    --border-secondary: #ffffff;
-    --text-muted: #ffffff;
-  }
-  
-  .service-card.border-yellow-400 {
-    border-width: 3px !important;
-    background-color: var(--accent-primary) !important;
-  }
-}
-
-/* ===== NUEVAS UTILIDADES ===== */
-
-/* Clase utility para forzar modo claro en elementos específicos */
-.force-light-theme {
-  background-color: #ffffff !important;
-  color: #1e293b !important;
-}
-
-/* Clase utility para forzar modo oscuro en elementos específicos */
-.force-dark-theme {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-}
-
-/* Indicador visual del tema actual (opcional) */
-.theme-indicator {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 8px 12px;
-  background: var(--accent-primary);
-  color: var(--accent-text);
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.theme-indicator.show {
-  opacity: 1;
-}
-
-/* NUEVO: Loading spinner mejorado */
-.loader {
-  border-color: var(--border-secondary);
-  border-top-color: var(--accent-primary);
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.bg-yellow-500:hover { 
+  background-color: var(--accent-hover) !important;
 }
 
 /* ===== COMPONENTES ESPECÍFICOS ===== */
