@@ -887,38 +887,109 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // INICIO DEL CÓDIGO AÑADIDO
-    const toggleSwitch = document.getElementById('darkModeToggle');
-    const body = document.body;
+    // --- MEJORADO: SISTEMA DE TOGGLE DE TEMA ---
+    function initializeThemeSystem() {
+        const toggleSwitch = document.getElementById('darkModeToggle');
+        const body = document.body;
 
-    // Función para aplicar el tema
-    function applyTheme(isLightMode) {
-        if (isLightMode) {
-            body.classList.add('light-mode');
-            toggleSwitch.checked = true;
-        } else {
-            body.classList.remove('light-mode');
-            toggleSwitch.checked = false;
+        // Función para aplicar el tema con transiciones suaves
+        function applyTheme(isLightMode, animate = true) {
+            // Agregar clase de transición si se requiere animación
+            if (animate) {
+                body.style.transition = 'all 0.3s ease';
+            }
+
+            if (isLightMode) {
+                body.classList.add('light-mode');
+                toggleSwitch.checked = true;
+                
+                // Actualizar meta theme-color para dispositivos móviles
+                updateThemeColor('#f8fafc');
+                
+                console.log('🌞 Modo claro activado');
+            } else {
+                body.classList.remove('light-mode');
+                toggleSwitch.checked = false;
+                
+                // Actualizar meta theme-color para dispositivos móviles
+                updateThemeColor('#000000');
+                
+                console.log('🌙 Modo oscuro activado');
+            }
+
+            // Remover transición después de aplicar el tema
+            if (animate) {
+                setTimeout(() => {
+                    body.style.transition = '';
+                }, 300);
+            }
         }
-    }
 
-    // Verificar y aplicar el tema guardado en localStorage
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') {
-        applyTheme(true);
-    } else {
-        applyTheme(false); // Por defecto, es modo oscuro
-    }
-
-    // Escuchar cambios en el toggle
-    toggleSwitch.addEventListener('change', () => {
-        if (toggleSwitch.checked) {
-            applyTheme(true);
-            localStorage.setItem('theme', 'light');
-        } else {
-            applyTheme(false);
-            localStorage.setItem('theme', 'dark');
+        // Función para actualizar el color del tema en dispositivos móviles
+        function updateThemeColor(color) {
+            let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+            if (!themeColorMeta) {
+                themeColorMeta = document.createElement('meta');
+                themeColorMeta.setAttribute('name', 'theme-color');
+                document.head.appendChild(themeColorMeta);
+            }
+            themeColorMeta.setAttribute('content', color);
         }
-    });
+
+        // Función para detectar preferencia del sistema
+        function getSystemPreference() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                return 'light';
+            }
+            return 'dark';
+        }
+
+        // Inicialización del tema
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('spinbook-theme');
+            let themeToApply = 'dark'; // Por defecto modo oscuro
+            
+            if (savedTheme) {
+                // Si hay tema guardado, usarlo
+                themeToApply = savedTheme;
+            } else {
+                // Si no hay tema guardado, usar preferencia del sistema
+                themeToApply = getSystemPreference();
+            }
+            
+            applyTheme(themeToApply === 'light', false); // Sin animación en la inicialización
+            
+            console.log('🎨 Tema inicializado:', themeToApply);
+        }
+
+        // Event listener para cambios en el toggle
+        toggleSwitch.addEventListener('change', () => {
+            const isLightMode = toggleSwitch.checked;
+            const newTheme = isLightMode ? 'light' : 'dark';
+            
+            applyTheme(isLightMode, true); // Con animación en cambios manuales
+            localStorage.setItem('spinbook-theme', newTheme);
+            
+            console.log('👆 Usuario cambió tema a:', newTheme);
+        });
+
+        // Detectar cambios en la preferencia del sistema
+        if (window.matchMedia) {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+            mediaQuery.addEventListener('change', (e) => {
+                // Solo aplicar si no hay preferencia guardada del usuario
+                const savedTheme = localStorage.getItem('spinbook-theme');
+                if (!savedTheme) {
+                    const systemPreference = e.matches ? 'light' : 'dark';
+                    applyTheme(systemPreference === 'light', true);
+                    console.log('🖥️ Preferencia del sistema cambió a:', systemPreference);
+                }
+            });
+        }
+
+        // Inicializar el tema
+        initializeTheme();
+    }
     // FIN DEL CÓDIGO AÑADIDO
 
     // --- INITIALIZATION ---
@@ -931,6 +1002,9 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeServiceSelection();
         initializeObservationsToggle();
         
+        // NUEVO: Inicializar sistema de temas mejorado
+        initializeThemeSystem();
+        
         console.log('🎵 SpinBook initialized with secure Telegram notifications');
         console.log('Telegram notifications handled securely by backend ✅');
         console.log('🔧 Dynamic elements initialized:', {
@@ -939,6 +1013,7 @@ document.addEventListener('DOMContentLoaded', function() {
             studioAddress: STUDIO_CONFIG.address
         });
         console.log('🎯 New features initialized: Services selection & Observations toggle');
+        console.log('🎨 Enhanced theme system initialized');
         
         // Verificar disponibilidad de jsPDF al inicializar
         const jsPDFConstructor = checkJsPDFAvailability();
@@ -948,4 +1023,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('⚠️ jsPDF library not found - PDF generation may not work');
         }
     });
+
+    // MEJORAS ADICIONALES OPCIONALES:
+
+    // 1. Función para obtener el tema actual (agregar al final del archivo)
+    function getCurrentTheme() {
+        return document.body.classList.contains('light-mode') ? 'light' : 'dark';
+    }
 });
