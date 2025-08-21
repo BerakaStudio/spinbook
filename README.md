@@ -1,5 +1,5 @@
 # SpinBook - Sistema de Reservas Musical
-![Version](https://img.shields.io/badge/version-1.0.2-green.svg?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.0.3-green.svg?style=flat-square)
 [![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat-square)](LICENSE)
 
 SpinBook es una aplicación web para gestionar reservas de estudio de grabación musical. Utiliza Google Calendar como backend y incluye notificaciones automáticas por Telegram.
