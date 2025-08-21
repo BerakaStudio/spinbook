@@ -36,7 +36,7 @@
 /* ===== MODO CLARO ===== */
 body.light-mode {
   /* Colores base */
-  --bg-primary: #f8fafc;
+  --bg-primary: #e9ecf0;
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.8);
   --bg-card-solid: #ffffff;
@@ -46,14 +46,14 @@ body.light-mode {
   --text-primary: #1e293b;
   --text-secondary: #475569;
   --text-muted: #64748b;
-  --text-accent: #af8a10; /* Nuevo color principal para modo claro */
+  --text-accent: #facc15; /* Nuevo color principal para modo claro */
   
   --border-primary: #e2e8f0;
   --border-secondary: #cbd5e1;
-  --border-accent: #af8a10;
+  --border-accent: #facc15;
   
-  --accent-primary: #b45309;
-  --accent-hover: #92400e;
+  --accent-primary: #facc15;
+  --accent-hover: #fbbf24;
   --accent-text: #ffffff;
   
   /* Colores de estado para modo claro */
