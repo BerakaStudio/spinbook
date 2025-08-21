@@ -248,7 +248,7 @@ h1, h2, h3, h4, h5, h6, p, span, a { font-family: inherit; }
 .logotitle { display: flex; width: 100%; justify-content: center; }
 .logotitle img.logo { max-width: 12%; height: auto; }
 .logotitle .title { display: flex; flex-flow: column; margin-left: 2rem; text-align: left; justify-content: center; }
-.sb-link:hover {text-decoration: none;}
+.sb-link:hover {text-decoration: none !important;}
 
 /* ========== UTILIDADES CON VARIABLES ========== */
 .bg-black { background-color: var(--bg-primary) !important; }
