@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return packageData.version || '1.0.3';
         } catch (error) {
             console.warn('Could not fetch version from package.json:', error);
-            return '1.0.2'; // Fallback version
+            return '1.0.3'; // Fallback version
         }
     }
 
@@ -203,17 +203,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Check if all available hours are booked
                     const fullyBooked = availableHours.every(hour => busySlots.includes(hour));
-                    
-                    if (fullyBooked) {
-                        // Find the day element and mark as fully booked
-                        const dayElements = calendarGridEl.querySelectorAll('.calendar-day');
-                        dayElements.forEach(el => {
-                            if (el.textContent == day && !el.classList.contains('disabled')) {
+                    const dayElements = calendarGridEl.querySelectorAll('.calendar-day');
+                    dayElements.forEach(el => {
+                        if (parseInt(el.textContent) === day && !el.classList.contains('disabled')) {
+                            if (fullyBooked) {
                                 el.classList.add('fully-booked');
+                                el.classList.remove('available');
                                 el.style.pointerEvents = 'none';
+                                el.style.opacity = '0.5';
+                                el.style.backgroundColor = '#374151';
+                                el.style.cursor = 'not-allowed';
+                            } else {
+                                el.classList.remove('fully-booked');
+                                el.style.pointerEvents = 'auto';
+                                el.style.opacity = '1';
+                                el.style.backgroundColor = '';
+                                el.style.cursor = 'pointer';
+
+                                if (!el.classList.contains('bg-yellow-500')) {
+                                    el.classList.add('hover:bg-gray-700');
+                                }
                             }
-                        });
-                    }
+                        }
+                    });
                 }
             } catch (error) {
                 console.error('Error loading slots for day', day, ':', error);
@@ -577,13 +589,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- REFRESH BOOKING STATE ---
     async function refreshBookingState() {
+        const allDayElements = calendarGridEl.querySelectorAll('.calendar-day');
+        allDayElements.forEach(el => {
+            if (!el.classList.contains('disabled')) {
+                // Restaurar estado original
+                el.classList.remove('fully-booked');
+                el.style.pointerEvents = 'auto';
+                el.style.opacity = '1';
+                el.style.backgroundColor = '';
+                el.style.cursor = 'pointer';
+            }
+        });
+        
+        // Recargar slots ocupados para el mes actual
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        await loadBusySlotsForMonth(currentYear, currentMonth);
+        
         if (selectedDate) {
             // Refresh the selected date to show new busy slots
             await selectDate(selectedDate);
         }
-        
-        // Refresh the calendar to update fully booked days
-        renderCalendar();
     }
 
     // --- FUNCIÓN PARA VERIFICAR SI jsPDF ESTÁ DISPONIBLE ---
